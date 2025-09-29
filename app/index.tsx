@@ -9,7 +9,7 @@ export default function Index() {
         alignItems: "center",
       }}
     >
-      <Text className="text-red-700">AMir and mootaz Appss</Text>
+      <Text className="text-red-700">AMir and mootaz App</Text>
     </View>
   );
 }
