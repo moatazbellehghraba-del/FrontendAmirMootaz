@@ -1,7 +1,8 @@
 // app/(tabs)/_layout.tsx
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { StyleSheet, Text, View, Platform } from "react-native";
+import { StyleSheet, Text, View, Platform, Animated } from "react-native";
+import React, { useRef, useEffect } from "react";
 
 export default function TabsLayout() {
   const iconsMap = {
@@ -27,6 +28,103 @@ export default function TabsLayout() {
     },
   } as const;
 
+  // Create animated values for each tab - background scale and opacity
+  const bgAnimations = {
+    Home: {
+      scale: useRef(new Animated.Value(0)).current,
+      opacity: useRef(new Animated.Value(0)).current,
+    },
+    Search: {
+      scale: useRef(new Animated.Value(0)).current,
+      opacity: useRef(new Animated.Value(0)).current,
+    },
+    Bookings: {
+      scale: useRef(new Animated.Value(0)).current,
+      opacity: useRef(new Animated.Value(0)).current,
+    },
+    Messages: {
+      scale: useRef(new Animated.Value(0)).current,
+      opacity: useRef(new Animated.Value(0)).current,
+    },
+    Profile: {
+      scale: useRef(new Animated.Value(0)).current,
+      opacity: useRef(new Animated.Value(0)).current,
+    },
+  };
+
+  const TabIcon = ({
+    routeName,
+    focused,
+  }: {
+    routeName: keyof typeof iconsMap;
+    focused: boolean;
+  }) => {
+    const { scale, opacity } = bgAnimations[routeName];
+
+    useEffect(() => {
+      if (focused) {
+        // Animate background in
+        Animated.parallel([
+          Animated.spring(scale, {
+            toValue: 1,
+            tension: 150,
+            friction: 10,
+            useNativeDriver: true,
+          }),
+          Animated.timing(opacity, {
+            toValue: 1,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      } else {
+        // Animate background out
+        Animated.parallel([
+          Animated.spring(scale, {
+            toValue: 0,
+            tension: 150,
+            friction: 10,
+            useNativeDriver: true,
+          }),
+          Animated.timing(opacity, {
+            toValue: 0,
+            duration: 150,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      }
+    }, [focused]);
+
+    return (
+      <View style={styles.tabItem}>
+        {/* Background highlight */}
+        <Animated.View
+          style={[
+            styles.backgroundHighlight,
+            {
+              transform: [{ scale }],
+              opacity: opacity,
+            },
+          ]}
+        />
+
+        {/* Icon and text */}
+        <View style={styles.iconContainer}>
+          <Ionicons
+            name={
+              focused
+                ? iconsMap[routeName].focused
+                : iconsMap[routeName].unfocused
+            }
+            size={focused ? 26 : 28}
+            color={focused ? "#FFFFFF" : "#989898"}
+          />
+          {focused && <Text style={styles.tabText}>{routeName}</Text>}
+        </View>
+      </View>
+    );
+  };
+
   return (
     <Tabs
       screenOptions={{
@@ -39,14 +137,7 @@ export default function TabsLayout() {
         name="Home"
         options={{
           tabBarIcon: ({ focused }) => (
-            <View style={styles.tabItem}>
-              <Ionicons
-                name={focused ? iconsMap.Home.focused : iconsMap.Home.unfocused}
-                size={focused ? 26 : 28}
-                color={focused ? "#FFFFFF" : "#989898"}
-              />
-              {focused && <Text style={styles.tabText}>Home</Text>}
-            </View>
+            <TabIcon routeName="Home" focused={focused} />
           ),
         }}
       />
@@ -54,16 +145,7 @@ export default function TabsLayout() {
         name="Search"
         options={{
           tabBarIcon: ({ focused }) => (
-            <View style={styles.tabItem}>
-              <Ionicons
-                name={
-                  focused ? iconsMap.Search.focused : iconsMap.Search.unfocused
-                }
-                size={focused ? 26 : 28}
-                color={focused ? "#FFFFFF" : "#989898"}
-              />
-              {focused && <Text style={styles.tabText}>Search</Text>}
-            </View>
+            <TabIcon routeName="Search" focused={focused} />
           ),
         }}
       />
@@ -71,18 +153,7 @@ export default function TabsLayout() {
         name="Bookings"
         options={{
           tabBarIcon: ({ focused }) => (
-            <View style={styles.tabItem}>
-              <Ionicons
-                name={
-                  focused
-                    ? iconsMap.Bookings.focused
-                    : iconsMap.Bookings.unfocused
-                }
-                size={focused ? 26 : 28}
-                color={focused ? "#FFFFFF" : "#989898"}
-              />
-              {focused && <Text style={styles.tabText}>Bookings</Text>}
-            </View>
+            <TabIcon routeName="Bookings" focused={focused} />
           ),
         }}
       />
@@ -90,18 +161,7 @@ export default function TabsLayout() {
         name="Messages"
         options={{
           tabBarIcon: ({ focused }) => (
-            <View style={styles.tabItem}>
-              <Ionicons
-                name={
-                  focused
-                    ? iconsMap.Messages.focused
-                    : iconsMap.Messages.unfocused
-                }
-                size={focused ? 26 : 28}
-                color={focused ? "#FFFFFF" : "#989898"}
-              />
-              {focused && <Text style={styles.tabText}>Messages</Text>}
-            </View>
+            <TabIcon routeName="Messages" focused={focused} />
           ),
         }}
       />
@@ -109,18 +169,7 @@ export default function TabsLayout() {
         name="Profile"
         options={{
           tabBarIcon: ({ focused }) => (
-            <View style={styles.tabItem}>
-              <Ionicons
-                name={
-                  focused
-                    ? iconsMap.Profile.focused
-                    : iconsMap.Profile.unfocused
-                }
-                size={focused ? 26 : 28}
-                color={focused ? "#FFFFFF" : "#989898"}
-              />
-              {focused && <Text style={styles.tabText}>Profile</Text>}
-            </View>
+            <TabIcon routeName="Profile" focused={focused} />
           ),
         }}
       />
@@ -133,12 +182,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#101010",
     borderTopColor: "#1C1C1E",
     borderTopWidth: 1,
-    // Different heights for iOS vs Android
     height: Platform.OS === "ios" ? 90 : 110,
     paddingBottom: Platform.OS === "ios" ? 25 : 35,
     paddingTop: 12,
-    // Safe area for iPhone notch
-    paddingHorizontal: Platform.OS === "ios" ? 0 : 0,
   },
   tabItem: {
     alignItems: "center",
@@ -146,6 +192,18 @@ const styles = StyleSheet.create({
     height: Platform.OS === "ios" ? 60 : 70,
     paddingVertical: 8,
     minWidth: 70,
+    position: "relative",
+  },
+  backgroundHighlight: {
+    position: "absolute",
+    backgroundColor: "rgba(255, 255, 255, 0.15)", // Subtle white overlay
+    borderRadius: 16,
+    width: 60,
+    height: 60,
+  },
+  iconContainer: {
+    alignItems: "center",
+    justifyContent: "center",
   },
   tabText: {
     color: "#FFFFFF",
