@@ -1,16 +1,10 @@
 // app/(tabs)/_layout.tsx
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View, Platform } from "react-native";
 
 export default function TabsLayout() {
-  const iconsMap: Record<
-    string,
-    {
-      focused: keyof typeof Ionicons.glyphMap;
-      unfocused: keyof typeof Ionicons.glyphMap;
-    }
-  > = {
+  const iconsMap = {
     Home: {
       focused: "home",
       unfocused: "home-outline",
@@ -31,7 +25,7 @@ export default function TabsLayout() {
       focused: "person",
       unfocused: "person-outline",
     },
-  };
+  } as const;
 
   return (
     <Tabs
@@ -68,11 +62,7 @@ export default function TabsLayout() {
                 size={focused ? 26 : 28}
                 color={focused ? "#FFFFFF" : "#989898"}
               />
-              {focused && (
-                <Text style={styles.tabText} numberOfLines={1}>
-                  Search
-                </Text>
-              )}
+              {focused && <Text style={styles.tabText}>Search</Text>}
             </View>
           ),
         }}
@@ -91,11 +81,7 @@ export default function TabsLayout() {
                 size={focused ? 26 : 28}
                 color={focused ? "#FFFFFF" : "#989898"}
               />
-              {focused && (
-                <Text style={styles.tabText} numberOfLines={1}>
-                  Bookings
-                </Text>
-              )}
+              {focused && <Text style={styles.tabText}>Bookings</Text>}
             </View>
           ),
         }}
@@ -114,11 +100,7 @@ export default function TabsLayout() {
                 size={focused ? 26 : 28}
                 color={focused ? "#FFFFFF" : "#989898"}
               />
-              {focused && (
-                <Text style={styles.tabText} numberOfLines={1}>
-                  Messages
-                </Text>
-              )}
+              {focused && <Text style={styles.tabText}>Messages</Text>}
             </View>
           ),
         }}
@@ -137,11 +119,7 @@ export default function TabsLayout() {
                 size={focused ? 26 : 28}
                 color={focused ? "#FFFFFF" : "#989898"}
               />
-              {focused && (
-                <Text style={styles.tabText} numberOfLines={1}>
-                  Profile
-                </Text>
-              )}
+              {focused && <Text style={styles.tabText}>Profile</Text>}
             </View>
           ),
         }}
@@ -155,23 +133,26 @@ const styles = StyleSheet.create({
     backgroundColor: "#101010",
     borderTopColor: "#1C1C1E",
     borderTopWidth: 1,
-    height: 130,
-    paddingBottom: 40,
-    paddingTop: 15,
+    // Different heights for iOS vs Android
+    height: Platform.OS === "ios" ? 90 : 110,
+    paddingBottom: Platform.OS === "ios" ? 25 : 35,
+    paddingTop: 12,
+    // Safe area for iPhone notch
+    paddingHorizontal: Platform.OS === "ios" ? 0 : 0,
   },
   tabItem: {
     alignItems: "center",
     justifyContent: "center",
-    height: 70,
-    paddingVertical: 12,
-    minWidth: 70, // Minimum width to prevent text breaking
+    height: Platform.OS === "ios" ? 60 : 70,
+    paddingVertical: 8,
+    minWidth: 70,
   },
   tabText: {
     color: "#FFFFFF",
-    fontSize: 10, // Slightly smaller font to fit in one line
+    fontSize: 10,
     fontWeight: "500",
     marginTop: 4,
     textAlign: "center",
-    includeFontPadding: false, // Remove extra padding that causes breaking
+    includeFontPadding: false,
   },
 });
