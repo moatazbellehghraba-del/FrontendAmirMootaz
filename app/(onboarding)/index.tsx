@@ -1,45 +1,66 @@
-import { View, Text, Button, StyleSheet } from "react-native";
-import { useRouter } from "expo-router";
-import React from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
+import React from 'react';
+import { View, Text, TouchableOpacity, Dimensions } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 
-const Screen1 = () => {
-  const router = useRouter();
+const { width, height } = Dimensions.get('window');
+
+export default function OnboardingScreen1() {
   return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <Text>Screen 1</Text>
-      <View style={styles.container}>
-        <Text style={styles.title}>Welcome to BeautyApp!</Text>
-        <Text style={styles.subtitle}>
-          Discover nearby salons, book appointments, and connect with
-          professionals.
-        </Text>
+    <SafeAreaView className="flex-1 bg-white">
+      {/* Header */}
+      <View className="flex-row justify-between items-center px-6 pt-4">
+        <View className="w-10 h-10 rounded-full border border-gray-300 items-center justify-center">
+          <Text className="text-black text-lg font-bold">1</Text>
+        </View>
+        <TouchableOpacity 
+          onPress={() => router.push('/(auth)/Login')}
+        >
+          <Text className="text-black font-semibold">Skip</Text>
+        </TouchableOpacity>
+      </View>
 
-        <Button
-          title="Next"
-          onPress={() => router.push("/(onboarding)/Screen2")}
-        />
+      {/* Main Content */}
+      <View className="flex-1 justify-center items-center px-8">
+        {/* Illustration Placeholder */}
+        <View className="mb-12">
+          <View 
+            style={{ 
+              width: width * 0.8, 
+              height: height * 0.4 
+            }}
+            className="bg-gray-50 rounded-lg border border-gray-200 items-center justify-center"
+          >
+            <Text className="text-gray-500 text-sm mb-1">Illustration Area</Text>
+            <Text className="text-gray-400 text-xs">Barber, Spa & Beauty Salon</Text>
+          </View>
+        </View>
+
+        {/* Text Content */}
+        <View className="items-center">
+          <Text className="text-3xl font-bold text-black text-center mb-4">
+            Discover Services
+          </Text>
+          <Text className="text-lg text-gray-700 text-center leading-7 mb-8">
+            Find the best barbers, spas, and beauty salons near you. Explore services tailored for men and women, all in one place.
+          </Text>
+        </View>
+
+        {/* Dots Indicator */}
+        <View className="flex-row justify-center space-x-2 mb-8">
+          <View className="w-3 h-3 bg-black rounded-full"></View>
+          <View className="w-3 h-3 bg-gray-300 rounded-full"></View>
+          <View className="w-3 h-3 bg-gray-300 rounded-full"></View>
+        </View>
+
+        {/* Next Button */}
+        <TouchableOpacity 
+          className="w-full bg-black py-4 rounded-2xl items-center shadow-lg"
+          onPress={() => router.push('/(onboarding)/Screen2')}
+        >
+          <Text className="text-white font-semibold text-lg">Next</Text>
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
-};
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 24,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    marginBottom: 12,
-  },
-  subtitle: {
-    fontSize: 16,
-    textAlign: "center",
-    marginBottom: 20,
-  },
-});
-
-export default Screen1;
+}
