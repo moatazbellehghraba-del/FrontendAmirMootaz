@@ -68,6 +68,8 @@ const Login = () => {
       console.log('✅ Login successful! Server response:', mockResponse);
       console.log('📝 User data:', mockResponse.user);
       console.log('🔐 Auth token:', mockResponse.user.token);
+      console.log('🚀 Navigating to Home screen...');
+      router.push('/(tabs)/Home');
       
       // Clear form after successful "login"
       setLoginData({
