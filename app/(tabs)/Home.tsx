@@ -55,7 +55,7 @@ const Home = () => {
     {
       name: "Tattoo Shop",
       image:
-        "https://images.unsplash.com/photo-1571687944729-b79e034a4cda?w=150&h=150&fit=crop&crop=center",
+        "https://images.unsplash.com/photo-1605648916483-9a98044d15c3?w=150&h=150&fit=crop&crop=center",
     },
     {
       name: "Hair Removal",
@@ -65,7 +65,7 @@ const Home = () => {
     {
       name: "Piercing",
       image:
-        "https://images.unsplash.com/photo-1603561591411-07134e71a2a9?w=150&h=150&fit=crop&crop=center",
+        "https://images.unsplash.com/photo-1594736797933-d0401ba94693?w=150&h=150&fit=crop&crop=center",
     },
     {
       name: "Aesthetic Medicine",
@@ -106,25 +106,43 @@ const Home = () => {
       image: "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=300",
       category: "Wellness & Spa",
     },
+  ];
+
+  const specialOffers = [
     {
-      id: 4,
-      name: "Glamour Makeup Studio",
-      rating: 4.9,
-      distance: "1.5 km",
-      image:
-        "https://images.unsplash.com/photo-1515377905703-c4788e51af15?w=300",
-      category: "Makeup",
+      id: 1,
+      title: "50% Off First Visit",
+      description: "For new customers only",
+      code: "WELCOME50",
+      color: "#FF6B6B",
+    },
+    {
+      id: 2,
+      title: "Free Manicure",
+      description: "With any hair service",
+      code: "FREEMANI",
+      color: "#4ECDC4",
+    },
+    {
+      id: 3,
+      title: "Student Discount",
+      description: "20% off all services",
+      code: "STUDENT20",
+      color: "#45B7D1",
     },
   ];
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      {/* Header */}
-      <View className="px-6 pt-6 pb-4">
+      {/* Header with Larger Logo */}
+      <View className="px-6 pt-6">
         <View className="flex-row justify-between items-center">
-          <View>
-            <Text className="text-2xl font-bold text-gray-900">LookLink</Text>
-            <Text className="text-gray-500 mt-1">Find your perfect salon</Text>
+          <View className="flex-row items-center">
+            <Image
+              source={require("../../assets/images/logopng.png")}
+              className="w-16 h-16"
+              resizeMode="contain"
+            />
           </View>
           <TouchableOpacity className="bg-gray-100 p-3 rounded-full">
             <Ionicons name="notifications-outline" size={24} color="#4A90E2" />
@@ -133,7 +151,7 @@ const Home = () => {
       </View>
 
       {/* Search Bar */}
-      <View className="px-6 pb-4">
+      <View className="px-6 pt-4">
         <View className="relative">
           <Ionicons
             name="search"
@@ -150,8 +168,8 @@ const Home = () => {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
-        {/* Categories Section with Circular Images */}
-        <View className="px-6 pb-6">
+        {/* Categories Section - First */}
+        <View className="px-6 pt-6">
           <View className="flex-row justify-between items-center mb-4">
             <Text className="text-xl font-bold text-gray-900">Categories</Text>
             <TouchableOpacity>
@@ -176,7 +194,6 @@ const Home = () => {
                     className="w-16 h-16 rounded-full mb-2"
                     resizeMode="cover"
                   />
-                  {/* Optional: Add a subtle border */}
                   <View
                     className="absolute inset-0 rounded-full border-2 border-white shadow-sm"
                     style={{
@@ -195,12 +212,48 @@ const Home = () => {
           </ScrollView>
         </View>
 
-        {/* Featured Salons Section */}
-        <View className="px-6 pb-6">
+        {/* Special Offers Banner - Displayed directly without clicking */}
+        <View className="px-6 pt-6">
           <View className="flex-row justify-between items-center mb-4">
             <Text className="text-xl font-bold text-gray-900">
-              Recommended for you
+              Special Offers
             </Text>
+          </View>
+
+          <View className="space-y-3">
+            {specialOffers.map((offer) => (
+              <View
+                key={offer.id}
+                className="rounded-2xl p-5"
+                style={{
+                  backgroundColor: offer.color,
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 12,
+                  elevation: 5,
+                }}
+              >
+                <Text className="text-white text-lg font-bold mb-1">
+                  {offer.title}
+                </Text>
+                <Text className="text-white text-sm opacity-90 mb-3">
+                  {offer.description}
+                </Text>
+                <View className="bg-white rounded-lg px-3 py-2 self-start">
+                  <Text className="text-gray-900 font-mono font-bold">
+                    Code: {offer.code}
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {/* Recommended Salons Section */}
+        <View className="px-6 pt-6">
+          <View className="flex-row justify-between items-center mb-4">
+            <Text className="text-xl font-bold text-gray-900">Recommended</Text>
             <TouchableOpacity>
               <Text className="text-[#4A90E2] font-semibold">See All</Text>
             </TouchableOpacity>
@@ -263,80 +316,27 @@ const Home = () => {
           </ScrollView>
         </View>
 
-        {/* Popular Services Section */}
-        <View className="px-6 pb-8">
-          <Text className="text-xl font-bold text-gray-900 mb-4">
-            Popular Services
-          </Text>
-
-          <View className="space-y-3">
-            {[
-              {
-                service: "Haircut & Styling",
-                price: "$35",
-                time: "45 min",
-                category: "Hair Salon",
-              },
-              {
-                service: "Manicure & Pedicure",
-                price: "$55",
-                time: "60 min",
-                category: "Nail Salon",
-              },
-              {
-                service: "Facial Treatment",
-                price: "$75",
-                time: "90 min",
-                category: "Skin Care",
-              },
-              {
-                service: "Beard Trim & Shave",
-                price: "$25",
-                time: "30 min",
-                category: "BarberShop",
-              },
-              {
-                service: "Eyelash Extensions",
-                price: "$85",
-                time: "120 min",
-                category: "Brows & Lashes",
-              },
-              {
-                service: "Therapeutic Massage",
-                price: "$65",
-                time: "60 min",
-                category: "Massage",
-              },
-            ].map((item, index) => (
-              <TouchableOpacity
-                key={index}
-                className="bg-white border border-gray-200 rounded-2xl p-4 flex-row justify-between items-center shadow-sm"
-                style={{
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 3,
-                  elevation: 2,
-                }}
-              >
-                <View className="flex-1">
-                  <Text className="text-gray-900 font-semibold text-base mb-1">
-                    {item.service}
-                  </Text>
-                  <View className="flex-row items-center">
-                    <View className="bg-gray-100 px-2 py-1 rounded-full mr-3">
-                      <Text className="text-gray-600 text-xs font-medium">
-                        {item.category}
-                      </Text>
-                    </View>
-                    <Text className="text-gray-500 text-sm">{item.time}</Text>
-                  </View>
-                </View>
-                <Text className="text-[#4A90E2] font-bold text-lg">
-                  {item.price}
+        {/* Quick Actions Footer */}
+        <View className="px-6 pt-6">
+          <View className="bg-gray-50 rounded-2xl p-6">
+            <Text className="text-lg font-bold text-gray-900 text-center mb-3">
+              Need Help Choosing?
+            </Text>
+            <Text className="text-gray-600 text-sm text-center mb-4">
+              Our beauty experts can help you find the perfect service
+            </Text>
+            <View className="flex-row space-x-3">
+              <TouchableOpacity className="flex-1 bg-[#4A90E2] rounded-xl py-3">
+                <Text className="text-white font-semibold text-center">
+                  Book Consultation
                 </Text>
               </TouchableOpacity>
-            ))}
+              <TouchableOpacity className="flex-1 bg-white border border-gray-300 rounded-xl py-3">
+                <Text className="text-gray-900 font-semibold text-center">
+                  Chat with Expert
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </ScrollView>
