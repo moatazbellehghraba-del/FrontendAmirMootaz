@@ -1,402 +1,201 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Platform, Image, Dimensions } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Eye, EyeOff, Mail, Lock, User, Phone, Check, X } from 'lucide-react-native';
-import Icon from 'react-native-vector-icons/FontAwesome5';
+import { 
+  User, 
+  Settings, 
+  Calendar, 
+  Star, 
+  Edit3,
+  ChevronRight,
+  Heart,
+  Bell,
+  Shield,
+  HelpCircle,
+  LogOut,
+  Camera,
+  Clock,
+  MapPin,
+  Phone,
+  Mail
+} from 'lucide-react-native';
 
-// Interface for signup data
-interface SignupData {
-  fullName: string;
-  email: string;
-  phone: string;
-  password: string;
-  confirmPassword: string;
-}
-
-// Interface for password requirements
-interface PasswordRequirements {
-  hasUpperCase: boolean;
-  hasNumber: boolean;
-  hasSymbol: boolean;
-  hasMinLength: boolean;
-}
-
-const { width } = Dimensions.get('window');
-
-const Signup = () => {
+const ProfileScreen = () => {
   const router = useRouter();
-  const [signupData, setSignupData] = useState<SignupData>({
-    fullName: '',
-    email: '',
-    phone: '',
-    password: '',
-    confirmPassword: ''
-  });
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [passwordRequirements, setPasswordRequirements] = useState<PasswordRequirements>({
-    hasUpperCase: false,
-    hasNumber: false,
-    hasSymbol: false,
-    hasMinLength: false
-  });
+  const [notifications, setNotifications] = useState(true);
+  const [darkMode, setDarkMode] = useState(false);
 
-  // Calculate logo size to match login screen (80% of screen width)
-  const logoSize = width * 0.5;
-
-  // Check password requirements
-  const checkPasswordRequirements = (password: string) => {
-    setPasswordRequirements({
-      hasUpperCase: /[A-Z]/.test(password),
-      hasNumber: /[0-9]/.test(password),
-      hasSymbol: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
-      hasMinLength: password.length >= 6
-    });
+  const userData = {
+    name: 'Amira Ben Ahmed',
+    email: 'amira.benahmed@email.com',
+    phone: '+216 12 345 678',
+    location: 'Tunis, Tunisia',
+    memberSince: 'Jan 2023'
   };
 
-  // Handle input changes
-  const handleInputChange = (field: keyof SignupData, value: string) => {
-    setSignupData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+  const stats = [
+    { value: '24', label: 'Appointments', icon: Calendar },
+    { value: '2', label: 'Upcoming', icon: Clock },
+    { value: '1,250', label: 'Points', icon: Star }
+  ];
 
-    // Check password requirements when password field changes
-    if (field === 'password') {
-      checkPasswordRequirements(value);
+  const upcomingAppointments = [
+    {
+      id: 1,
+      service: 'Haircut & Styling',
+      professional: 'Sophie Martin',
+      date: 'Dec 15, 2024',
+      time: '10:00 AM'
+    },
+    {
+      id: 2,
+      service: 'Facial Care',
+      professional: 'Léa Bernard',
+      date: 'Dec 18, 2024',
+      time: '2:00 PM'
     }
-  };
+  ];
 
-  // Handle signup submission
-  const handleSignup = async () => {
-    // Validation
-    if (!signupData.fullName || !signupData.email || !signupData.phone || !signupData.password || !signupData.confirmPassword) {
-      console.log('❌ Please fill in all fields');
-      return;
-    }
-
-    if (signupData.password !== signupData.confirmPassword) {
-      console.log('❌ Passwords do not match');
-      return;
-    }
-
-    // Check if all password requirements are met
-    const allRequirementsMet = Object.values(passwordRequirements).every(requirement => requirement);
-    if (!allRequirementsMet) {
-      console.log('❌ Password does not meet all requirements');
-      return;
-    }
-
-    setIsLoading(true);
-    
-    try {
-      // Simulate API call
-      console.log('📤 Signup data being sent to server:', {
-        fullName: signupData.fullName,
-        email: signupData.email,
-        phone: signupData.phone,
-        password: signupData.password,
-        timestamp: new Date().toISOString()
-      });
-      
-      // Simulate network request
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Simulate successful signup response
-      const mockResponse = {
-        success: true,
-        user: {
-          id: '67890',
-          fullName: signupData.fullName,
-          email: signupData.email,
-          phone: signupData.phone,
-          token: 'mock-jwt-token-signup'
-        },
-        message: 'Account created successfully!'
-      };
-      
-      console.log('✅ Signup successful! Server response:', mockResponse);
-      console.log('📝 User registered:', mockResponse.user);
-      console.log('🔐 Auth token:', mockResponse.user.token);
-      
-      // Clear form after successful "signup"
-      setSignupData({
-        fullName: '',
-        email: '',
-        phone: '',
-        password: '',
-        confirmPassword: ''
-      });
-      
-      // Reset password requirements
-      setPasswordRequirements({
-        hasUpperCase: false,
-        hasNumber: false,
-        hasSymbol: false,
-        hasMinLength: false
-      });
-      
-      console.log('🔄 Form cleared. User can now login.');
-      
-    } catch (error) {
-      console.log('❌ Signup error:', error);
-      console.log('🚫 Would show error message to user here');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Handle social signup
-  const handleSocialSignup = (provider: string) => {
-    console.log(`🔗 ${provider} signup clicked`);
-    console.log(`📤 Would redirect to ${provider} OAuth flow`);
-    console.log(`🔄 Would handle ${provider} authentication callback`);
-  };
-
-  // Handle login navigation
-  const handleLogin = () => {
-    console.log('🔐 Navigating to Login page');
-    router.push('/(auth)/Login');
-  };
-
-  // Requirement item component
-  const RequirementItem = ({ met, text }: { met: boolean; text: string }) => (
-    <View className="flex-row items-center mb-1">
-      {met ? (
-        <Check size={14} color="#10B981" />
-      ) : (
-        <X size={14} color="#EF4444" />
-      )}
-      <Text className={`ml-2 text-xs ${met ? 'text-green-600' : 'text-red-600'}`}>
-        {text}
-      </Text>
-    </View>
-  );
+  const menuItems = [
+    { icon: User, title: 'Edit Profile', subtitle: 'Update your personal information' },
+    { icon: Bell, title: 'Notifications', subtitle: 'Manage your notifications', switch: true, value: notifications, onChange: setNotifications },
+    { icon: Shield, title: 'Privacy & Security', subtitle: 'Control your privacy settings' },
+    { icon: Heart, title: 'Favorites', subtitle: 'Your saved services and professionals' },
+    { icon: HelpCircle, title: 'Help & Support', subtitle: 'Get help and contact support' },
+  ];
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      <ScrollView className="flex-1" contentContainerStyle={{ flexGrow: 1 }}>
-        <View className="flex-1 px-4 justify-center">
-          
-          {/* Logo - Same size as login screen */}
-          <View className="items-center mb-4">
-            <Image 
-              source={require('../../assets/images/logopng.png')}
-              style={{ 
-                width: logoSize, 
-                height: logoSize 
-              }}
-              resizeMode="contain"
-            />
+      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+        
+        {/* Header */}
+        <View className="px-6 pt-8 pb-6">
+          <View className="flex-row items-center justify-between mb-8">
+            <Text className="text-3xl font-light text-black">Profile</Text>
+            <TouchableOpacity className="w-10 h-10 items-center justify-center">
+              <Settings size={22} color="#000" />
+            </TouchableOpacity>
           </View>
 
-          {/* Header */}
+          {/* Profile Section */}
           <View className="items-center mb-8">
-            <Text className="text-4xl font-black text-black mb-2">Create Account</Text>
-            <Text className="text-lg text-gray-600 text-center">
-              Join us and discover amazing beauty services
-            </Text>
-          </View>
-
-          {/* Signup Form */}
-          <View className="mb-6">
-            {/* Full Name Input */}
-            <View className="flex-row items-center border border-gray-300 rounded-2xl px-4 py-4 mb-4">
-              <User size={20} color="#6B7280" />
-              <TextInput
-                className="flex-1 ml-3 text-black text-lg"
-                placeholder="Full Name"
-                placeholderTextColor="#9CA3AF"
-                value={signupData.fullName}
-                onChangeText={(value) => handleInputChange('fullName', value)}
-                autoCapitalize="words"
-                autoComplete="name"
-                textContentType="name"
-              />
-            </View>
-
-            {/* Email Input */}
-            <View className="flex-row items-center border border-gray-300 rounded-2xl px-4 py-4 mb-4">
-              <Mail size={20} color="#6B7280" />
-              <TextInput
-                className="flex-1 ml-3 text-black text-lg"
-                placeholder="Email Address"
-                placeholderTextColor="#9CA3AF"
-                value={signupData.email}
-                onChangeText={(value) => handleInputChange('email', value)}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoComplete="email"
-                textContentType="emailAddress"
-              />
-            </View>
-
-            {/* Phone Input */}
-            <View className="flex-row items-center border border-gray-300 rounded-2xl px-4 py-4 mb-4">
-              <Phone size={20} color="#6B7280" />
-              <TextInput
-                className="flex-1 ml-3 text-black text-lg"
-                placeholder="Phone Number"
-                placeholderTextColor="#9CA3AF"
-                value={signupData.phone}
-                onChangeText={(value) => handleInputChange('phone', value)}
-                keyboardType="phone-pad"
-                autoComplete="tel"
-                textContentType="telephoneNumber"
-              />
-            </View>
-
-            {/* Password Input - FIXED FOR iOS AUTOFILL */}
-            <View className="flex-row items-center border border-gray-300 rounded-2xl px-4 py-4 mb-3">
-              <Lock size={20} color="#6B7280" />
-              <TextInput
-                className="flex-1 ml-3 text-black text-lg"
-                placeholder="Password"
-                placeholderTextColor="#9CA3AF"
-                value={signupData.password}
-                onChangeText={(value) => handleInputChange('password', value)}
-                secureTextEntry={!showPassword}
-                autoCapitalize="none"
-                autoComplete="password"
-                textContentType="newPassword"
-                passwordRules={Platform.OS === 'ios' ? "minlength: 6; required: lower; required: upper; required: digit; required: [-];" : undefined}
-              />
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                {showPassword ? (
-                  <EyeOff size={20} color="#6B7280" />
-                ) : (
-                  <Eye size={20} color="#6B7280" />
-                )}
+            <View className="relative mb-4">
+              <View className="w-24 h-24 bg-gray-100 rounded-full items-center justify-center border-2 border-gray-200">
+                <Text className="text-gray-600 text-xl font-medium">AB</Text>
+              </View>
+              <TouchableOpacity className="absolute bottom-0 right-0 bg-black rounded-full p-2">
+                <Camera size={16} color="#fff" />
               </TouchableOpacity>
             </View>
-
-            {/* Password Requirements - Only show after user starts typing */}
-            {signupData.password.length > 0 && (
-              <View className="mb-4 p-3 bg-gray-50 rounded-xl border border-gray-200">
-                <Text className="text-gray-600 text-sm font-medium mb-2">Password must contain:</Text>
-                <RequirementItem 
-                  met={passwordRequirements.hasUpperCase} 
-                  text="At least one uppercase letter (A-Z)" 
-                />
-                <RequirementItem 
-                  met={passwordRequirements.hasNumber} 
-                  text="At least one number (0-9)" 
-                />
-                <RequirementItem 
-                  met={passwordRequirements.hasSymbol} 
-                  text="At least one symbol (!@#$% etc.)" 
-                />
-                <RequirementItem 
-                  met={passwordRequirements.hasMinLength} 
-                  text="At least 6 characters" 
-                />
-              </View>
-            )}
-
-            {/* Confirm Password Input - FIXED FOR iOS AUTOFILL */}
-            <View className="flex-row items-center border border-gray-300 rounded-2xl px-4 py-4 mb-6">
-              <Lock size={20} color="#6B7280" />
-              <TextInput
-                className="flex-1 ml-3 text-black text-lg"
-                placeholder="Confirm Password"
-                placeholderTextColor="#9CA3AF"
-                value={signupData.confirmPassword}
-                onChangeText={(value) => handleInputChange('confirmPassword', value)}
-                secureTextEntry={!showConfirmPassword}
-                autoCapitalize="none"
-                autoComplete="password"
-                textContentType="newPassword"
-                passwordRules={Platform.OS === 'ios' ? "minlength: 6; required: lower; required: upper; required: digit; required: [-];" : undefined}
-              />
-              <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
-                {showConfirmPassword ? (
-                  <EyeOff size={20} color="#6B7280" />
-                ) : (
-                  <Eye size={20} color="#6B7280" />
-                )}
-              </TouchableOpacity>
-            </View>
-
-            {/* Password Match Indicator */}
-            {signupData.password.length > 0 && signupData.confirmPassword.length > 0 && (
-              <View className="mb-4 flex-row items-center justify-center">
-                {signupData.password === signupData.confirmPassword ? (
-                  <View className="flex-row items-center">
-                    <Check size={16} color="#10B981" />
-                    <Text className="ml-2 text-green-600 text-sm">Passwords match</Text>
-                  </View>
-                ) : (
-                  <View className="flex-row items-center">
-                    <X size={16} color="#EF4444" />
-                    <Text className="ml-2 text-red-600 text-sm">Passwords do not match</Text>
-                  </View>
-                )}
-              </View>
-            )}
-
-            {/* Sign Up Button */}
-            <TouchableOpacity 
-              className={`py-4 rounded-2xl items-center shadow-lg mb-6 ${
-                isLoading ? 'bg-gray-400' : 'bg-black'
-              }`}
-              onPress={handleSignup}
-              disabled={isLoading}
-            >
-              <Text className="text-white font-semibold text-lg">
-                {isLoading ? 'Creating Account...' : 'Create Account'}
-              </Text>
-            </TouchableOpacity>
-
-            {/* Current Form Data Display */}
-            <View className="bg-gray-50 p-4 rounded-2xl mb-4 border border-gray-200">
-              <Text className="text-gray-600 text-sm font-medium mb-2">Current Form Data:</Text>
-              <Text className="text-black text-xs">Name: {signupData.fullName || 'Not entered'}</Text>
-              <Text className="text-black text-xs">Email: {signupData.email || 'Not entered'}</Text>
-              <Text className="text-black text-xs">Phone: {signupData.phone || 'Not entered'}</Text>
-              <Text className="text-black text-xs">Password: {signupData.password ? '••••••••' : 'Not entered'}</Text>
-              <Text className="text-black text-xs">Confirm: {signupData.confirmPassword ? '••••••••' : 'Not entered'}</Text>
+            <Text className="text-2xl font-normal text-black mb-1">{userData.name}</Text>
+            <Text className="text-gray-500 text-base">{userData.email}</Text>
+            <View className="flex-row items-center mt-2">
+              <MapPin size={14} color="#666" />
+              <Text className="text-gray-600 text-sm ml-1">{userData.location}</Text>
             </View>
           </View>
 
-          {/* Social Signup Divider */}
-          <View className="flex-row items-center mb-6">
-            <View className="flex-1 h-0.5 bg-gray-300" />
-            <Text className="mx-4 text-gray-500 font-medium">Or sign up with</Text>
-            <View className="flex-1 h-0.5 bg-gray-300" />
-          </View>
-
-          {/* Social Signup Buttons */}
-          <View className="flex-row justify-center space-x-3 mb-8">
-            {/* Google Signup */}
-            <TouchableOpacity 
-              className="w-10 h-10 border border-gray-300 rounded-xl items-center justify-center"
-              onPress={() => handleSocialSignup('Google')}
-            >
-              <Icon name="google" size={18} color="#DB4437" />
-            </TouchableOpacity>
-
-            {/* Facebook Signup */}
-            <TouchableOpacity 
-              className="w-10 h-10 border border-gray-300 rounded-xl items-center justify-center"
-              onPress={() => handleSocialSignup('Facebook')}
-            >
-              <Icon name="facebook" size={18} color="#1877F2" />
-            </TouchableOpacity>
-          </View>
-
-          {/* Login Link */}
-          <View className="flex-row justify-center">
-            <Text className="text-gray-600">Already have an account? </Text>
-            <TouchableOpacity onPress={handleLogin}>
-              <Text className="text-black font-semibold">Sign In</Text>
-            </TouchableOpacity>
+          {/* Stats */}
+          <View className="flex-row justify-between bg-gray-50 rounded-2xl p-4 mb-8">
+            {stats.map((stat, index) => {
+              const Icon = stat.icon;
+              return (
+                <View key={index} className="items-center flex-1">
+                  <View className="w-12 h-12 bg-white rounded-full items-center justify-center mb-2 border border-gray-200">
+                    <Icon size={20} color="#000" />
+                  </View>
+                  <Text className="text-black font-medium text-lg">{stat.value}</Text>
+                  <Text className="text-gray-500 text-xs">{stat.label}</Text>
+                </View>
+              );
+            })}
           </View>
         </View>
+
+        {/* Upcoming Appointments */}
+        <View className="px-6 mb-8">
+          <Text className="text-xl font-light text-black mb-4">Upcoming</Text>
+          {upcomingAppointments.map((appointment) => (
+            <TouchableOpacity key={appointment.id} className="bg-gray-50 rounded-2xl p-4 mb-3 border border-gray-200">
+              <View className="flex-row justify-between items-start mb-2">
+                <Text className="text-black font-medium text-base flex-1">{appointment.service}</Text>
+                <Text className="text-gray-500 text-sm">{appointment.time}</Text>
+              </View>
+              <Text className="text-gray-600 text-sm mb-2">with {appointment.professional}</Text>
+              <View className="flex-row items-center">
+                <Calendar size={14} color="#666" />
+                <Text className="text-gray-600 text-sm ml-2">{appointment.date}</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Menu Items */}
+        <View className="px-6 mb-8">
+          <Text className="text-xl font-light text-black mb-4">Settings</Text>
+          {menuItems.map((item, index) => (
+            <TouchableOpacity 
+              key={index}
+              className="flex-row items-center justify-between py-4 border-b border-gray-100"
+            >
+              <View className="flex-row items-center flex-1">
+                <View className="w-10 h-10 bg-gray-100 rounded-lg items-center justify-center mr-4">
+                  <item.icon size={20} color="#000" />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-black font-normal text-base">{item.title}</Text>
+                  <Text className="text-gray-500 text-sm mt-1">{item.subtitle}</Text>
+                </View>
+              </View>
+              
+              {item.switch ? (
+                <Switch
+                  value={item.value}
+                  onValueChange={item.onChange}
+                  trackColor={{ false: '#f1f5f9', true: '#000' }}
+                  thumbColor={item.value ? '#fff' : '#f4f4f5'}
+                />
+              ) : (
+                <ChevronRight size={20} color="#9CA3AF" />
+              )}
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Contact Info */}
+        <View className="px-6 mb-8">
+          <Text className="text-xl font-light text-black mb-4">Contact</Text>
+          <View className="bg-gray-50 rounded-2xl p-4 border border-gray-200">
+            <View className="flex-row items-center mb-3">
+              <Phone size={18} color="#666" />
+              <Text className="text-gray-600 text-base ml-3">{userData.phone}</Text>
+            </View>
+            <View className="flex-row items-center">
+              <Mail size={18} color="#666" />
+              <Text className="text-gray-600 text-base ml-3">{userData.email}</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Sign Out */}
+        <TouchableOpacity className="flex-row items-center justify-center py-4 mx-6 mb-8 border border-gray-200 rounded-2xl">
+          <LogOut size={20} color="#666" />
+          <Text className="text-gray-600 text-base font-normal ml-2">Sign Out</Text>
+        </TouchableOpacity>
+
+        {/* App Version */}
+        <View className="items-center pb-8">
+          <Text className="text-gray-400 text-sm">Saha v0.0.1</Text>
+        </View>
       </ScrollView>
+
+      {/* Edit Button */}
+      <TouchableOpacity className="absolute bottom-6 right-6 bg-black rounded-full p-4 shadow-lg">
+        <Edit3 size={20} color="#fff" />
+      </TouchableOpacity>
     </SafeAreaView>
   );
 };
 
-export default Signup;
+export default ProfileScreen;
