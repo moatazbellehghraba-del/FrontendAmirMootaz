@@ -29,11 +29,14 @@ const ProfileScreen = () => {
 
   const userData = {
     name: 'Amira Ben Ahmed',
+    firstName: 'Amira',
+    lastName: 'Ben Ahmed',
     email: 'amira.benahmed@email.com',
     phone: '+216 12 345 678',
     location: 'Tunis, Tunisia',
+    birthDate: '15 March 1990',
+    gender: 'Female',
     memberSince: 'Jan 2023',
-    membership: 'Premium Member'
   };
 
   const stats = [
@@ -62,12 +65,23 @@ const ProfileScreen = () => {
   ];
 
   const menuItems = [
-    { icon: User, title: 'Personal Information', subtitle: 'Update your details' },
+    { 
+      icon: User, 
+      title: 'Personal Information', 
+      subtitle: 'Update your details',
+      onPress: () => router.push({
+        pathname: '/Components/PersonalInfo',
+        params: { userData: JSON.stringify(userData) }
+      })
+    },
+    
     { icon: Bell, title: 'Notifications', subtitle: 'Manage alerts', switch: true, value: notifications, onChange: setNotifications },
-    { icon: Shield, title: 'Privacy & Security', subtitle: 'Control your privacy' },
+    { icon: Shield, 
+    title: 'Privacy & Security', 
+    subtitle: 'Control your privacy',
+    onPress: () => router.push('/Components/privacySecurity')},
     { icon: Heart, title: 'Favorites', subtitle: 'Saved services & professionals' },
-    { icon: Crown, title: 'Membership', subtitle: 'Premium benefits' },
-    { icon: HelpCircle, title: 'Help & Support', subtitle: 'Get help anytime' },
+    { icon: HelpCircle, title: 'Help & Support', subtitle: 'Get help anytime', onPress: () => router.push('/Components/HelpSupport') },
   ];
 
   type StatCardProps = {
@@ -127,10 +141,22 @@ const ProfileScreen = () => {
     switch?: boolean;
     value?: boolean;
     onChange?: (value: boolean) => void;
+    onPress?: () => void;
   };
 
-  const MenuItem: React.FC<MenuItemProps> = ({ icon: Icon, title, subtitle, switch: hasSwitch, value, onChange }) => (
-    <TouchableOpacity className="flex-row items-center justify-between py-4 border-b border-gray-100 active:bg-gray-50">
+  const MenuItem: React.FC<MenuItemProps> = ({ 
+    icon: Icon, 
+    title, 
+    subtitle, 
+    switch: hasSwitch, 
+    value, 
+    onChange,
+    onPress 
+  }) => (
+    <TouchableOpacity 
+      className="flex-row items-center justify-between py-4 border-b border-gray-100 active:bg-gray-50"
+      onPress={onPress}
+    >
       <View className="flex-row items-center flex-1">
         <View className="w-12 h-12 bg-gray-50 rounded-xl items-center justify-center mr-4 border border-gray-100">
           <Icon size={20} color="#000" />
@@ -165,9 +191,9 @@ const ProfileScreen = () => {
               <Text className="text-3xl font-light text-black mb-1">Profile</Text>
               <Text className="text-gray-400 text-base">Welcome back</Text>
             </View>
-            <TouchableOpacity className="w-12 h-12 bg-gray-50 rounded-2xl items-center justify-center border border-gray-200">
+            
               <Settings size={22} color="#000" />
-            </TouchableOpacity>
+            
           </View>
 
           {/* Enhanced Profile Section */}
@@ -176,9 +202,6 @@ const ProfileScreen = () => {
               <View className="w-28 h-28 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full items-center justify-center border-4 border-white shadow-sm">
                 <Text className="text-gray-600 text-2xl font-medium">AB</Text>
               </View>
-              <TouchableOpacity className="absolute bottom-1 right-1 bg-black rounded-full p-2 shadow-md">
-                <Camera size={16} color="#fff" />
-              </TouchableOpacity>
             </View>
             <Text className="text-2xl font-normal text-black mb-2">{userData.name}</Text>
             
@@ -223,8 +246,6 @@ const ProfileScreen = () => {
           </View>
         </View>
 
-        
-
         {/* Enhanced Sign Out */}
         <TouchableOpacity className="flex-row items-center justify-center py-5 mx-6 mb-8 border border-gray-300 rounded-2xl active:bg-gray-50">
           <LogOut size={20} color="#666" />
@@ -238,10 +259,7 @@ const ProfileScreen = () => {
         </View>
       </ScrollView>
 
-      {/* Enhanced Edit Button */}
-      <TouchableOpacity className="absolute bottom-6 right-6 bg-black rounded-2xl p-4 shadow-xl active:scale-95">
-        <Edit3 size={22} color="#fff" />
-      </TouchableOpacity>
+      
     </SafeAreaView>
   );
 };
