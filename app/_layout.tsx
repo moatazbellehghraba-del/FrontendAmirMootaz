@@ -2,13 +2,14 @@ import { Stack } from "expo-router";
 import "./global.css";
 import { useEffect, useState } from "react";
 import LoadingScreen from "./Components/LoadingScreen";
+
 export default function RootLayout() {
-  const [isLoading, setIsLoading] = useState(true); // always start loading
+  const [isLoading, setIsLoading] = useState(true);
 
   const isFirstLaunch = true; // pretend it's first time
   const isLoggedIn = false; // pretend user is not logged in
+
   useEffect(() => {
-    // Simulate a 4-second splash/loading delay
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 4000);
@@ -27,7 +28,8 @@ export default function RootLayout() {
       ) : !isLoggedIn ? (
         <Stack.Screen name="(auth)/Login" />
       ) : (
-        <Stack.Screen name="(tabs)/Home" />
+        // Change this to render the tabs layout, not the Home screen directly
+        <Stack.Screen name="(tabs)" />
       )}
     </Stack>
   );
