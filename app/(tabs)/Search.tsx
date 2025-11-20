@@ -67,6 +67,71 @@ export default function SearchScreen() {
     setDate(currentDate);
   };
 
+  const ResultCard = ({ item }: { item: SearchResult }) => (
+    <TouchableOpacity 
+      className="bg-white rounded-xl p-4 mb-3 border border-gray-200"
+      onPress={() => router.push({
+        pathname: '/(salon)/SalonScreen',
+        params: {
+          id: item.id,
+          name: item.name,
+        }
+      })}
+    >
+      <View className="flex-row">
+        <Image
+          source={{ uri: item.image }}
+          className="w-20 h-20 rounded-lg mr-4"
+        />
+        <View className="flex-1">
+          <View className="flex-row justify-between items-start mb-1">
+            <Text className="text-lg font-semibold text-gray-900 flex-1 mr-2">
+              {item.name}
+            </Text>
+            <View className={`px-2 py-1 rounded-full ${
+              item.isOpen ? 'bg-green-100' : 'bg-red-100'
+            }`}>
+              <Text className={`text-xs font-medium ${
+                item.isOpen ? 'text-green-800' : 'text-red-800'
+              }`}>
+                {item.isOpen ? 'OPEN' : 'CLOSED'}
+              </Text>
+            </View>
+          </View>
+          
+          <Text className="text-gray-600 text-sm mb-2">
+            {item.category} • {item.distance} • {item.priceRange}
+          </Text>
+          
+          <View className="flex-row items-center justify-between">
+            <View className="flex-row items-center">
+              <Ionicons name="star" size={14} color="#F59E0B" />
+              <Text className="text-gray-700 text-sm font-medium ml-1 mr-2">
+                {item.rating}
+              </Text>
+              <Text className="text-gray-500 text-sm">
+                ({item.reviews})
+              </Text>
+            </View>
+            
+            <View className="flex-row items-center space-x-2">
+              {item.offers && (
+                <View className="bg-blue-100 px-2 py-1 rounded-full">
+                  <Text className="text-blue-800 text-xs font-medium">Offers</Text>
+                </View>
+              )}
+              {item.homeService && (
+                <View className="bg-green-100 px-2 py-1 rounded-full">
+                  <Text className="text-green-800 text-xs font-medium">Home</Text>
+                </View>
+              )}
+            </View>
+          </View>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+
   return (
     <SafeAreaView className="flex-1 bg-white">
       <View style={styles.container}>

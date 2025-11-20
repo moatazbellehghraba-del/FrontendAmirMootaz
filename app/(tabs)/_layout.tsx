@@ -1,143 +1,53 @@
 // app/(tabs)/_layout.tsx
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { StyleSheet, Text, View, Platform, Animated } from "react-native";
-import React, { useRef, useEffect } from "react";
+import { StyleSheet, Text, View, Platform } from "react-native";
+import React from "react";
 
 export default function TabsLayout() {
-  const iconsMap = {
-    Home: {
-      focused: "home",
-      unfocused: "home-outline",
-    },
-    Search: {
-      focused: "search",
-      unfocused: "search-outline",
-    },
-    Bookings: {
-      focused: "calendar",
-      unfocused: "calendar-outline",
-    },
-    Messages: {
-      focused: "chatbubble",
-      unfocused: "chatbubble-outline",
-    },
-    Profile: {
-      focused: "person",
-      unfocused: "person-outline",
-    },
-  } as const;
-
-  // Create animated values for each tab - background scale and opacity
-  const bgAnimations = {
-    Home: {
-      scale: useRef(new Animated.Value(0)).current,
-      opacity: useRef(new Animated.Value(0)).current,
-    },
-    Search: {
-      scale: useRef(new Animated.Value(0)).current,
-      opacity: useRef(new Animated.Value(0)).current,
-    },
-    Bookings: {
-      scale: useRef(new Animated.Value(0)).current,
-      opacity: useRef(new Animated.Value(0)).current,
-    },
-    Messages: {
-      scale: useRef(new Animated.Value(0)).current,
-      opacity: useRef(new Animated.Value(0)).current,
-    },
-    Profile: {
-      scale: useRef(new Animated.Value(0)).current,
-      opacity: useRef(new Animated.Value(0)).current,
-    },
-  };
-
-  const TabIcon = ({
-    routeName,
-    focused,
-  }: {
-    routeName: keyof typeof iconsMap;
-    focused: boolean;
-  }) => {
-    const { scale, opacity } = bgAnimations[routeName];
-
-    useEffect(() => {
-      if (focused) {
-        // Animate background in
-        Animated.parallel([
-          Animated.spring(scale, {
-            toValue: 1,
-            tension: 150,
-            friction: 10,
-            useNativeDriver: true,
-          }),
-          Animated.timing(opacity, {
-            toValue: 1,
-            duration: 200,
-            useNativeDriver: true,
-          }),
-        ]).start();
-      } else {
-        // Animate background out
-        Animated.parallel([
-          Animated.spring(scale, {
-            toValue: 0,
-            tension: 150,
-            friction: 10,
-            useNativeDriver: true,
-          }),
-          Animated.timing(opacity, {
-            toValue: 0,
-            duration: 150,
-            useNativeDriver: true,
-          }),
-        ]).start();
-      }
-    }, [focused]);
-
-    return (
-      <View style={styles.tabItem}>
-        {/* Background highlight */}
-        <Animated.View
-          style={[
-            styles.backgroundHighlight,
-            {
-              transform: [{ scale }],
-              opacity: opacity,
-            },
-          ]}
-        />
-
-        {/* Icon and text */}
-        <View style={styles.iconContainer}>
-          <Ionicons
-            name={
-              focused
-                ? iconsMap[routeName].focused
-                : iconsMap[routeName].unfocused
-            }
-            size={focused ? 26 : 28}
-            color={focused ? "#FFFFFF" : "#989898"}
-          />
-          {focused && <Text style={styles.tabText}>{routeName}</Text>}
-        </View>
-      </View>
-    );
-  };
-
   return (
     <Tabs
+      // @ts-ignore: sceneContainerStyle is not present in the expo-router Tabs types but is supported at runtime
+      sceneContainerStyle={{
+        backgroundColor: "#101010",
+      }}
       screenOptions={{
         tabBarShowLabel: false,
         headerShown: false,
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: {
+          backgroundColor: "#101010",
+          borderTopColor: "#1C1C1E",
+          borderTopWidth: 1,
+          height: Platform.OS === "ios" ? 85 : 65,
+          paddingBottom: Platform.OS === "ios" ? 25 : 10,
+          paddingTop: 12,
+          position: 'absolute',
+          elevation: 0,
+          shadowOpacity: 0,
+          borderBottomWidth: 0,
+        },
+        headerBackground: () => null,
+        headerTitle: "",
+        headerShadowVisible: false,
+        headerTintColor: "#101010",
+        headerStyle: {
+          backgroundColor: "#101010",
+          elevation: 0,
+          shadowOpacity: 0,
+          borderBottomWidth: 0,
+          height: 0,
+        },
       }}
     >
       <Tabs.Screen
         name="Home"
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon routeName="Home" focused={focused} />
+            <TabIcon 
+              name={focused ? "home" : "home-outline"} 
+              label="Home" 
+              focused={focused} 
+            />
           ),
         }}
       />
@@ -145,7 +55,11 @@ export default function TabsLayout() {
         name="Search"
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon routeName="Search" focused={focused} />
+            <TabIcon 
+              name={focused ? "search" : "search-outline"} 
+              label="Search" 
+              focused={focused} 
+            />
           ),
         }}
       />
@@ -153,7 +67,11 @@ export default function TabsLayout() {
         name="Bookings"
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon routeName="Bookings" focused={focused} />
+            <TabIcon 
+              name={focused ? "calendar" : "calendar-outline"} 
+              label="Bookings" 
+              focused={focused} 
+            />
           ),
         }}
       />
@@ -161,7 +79,11 @@ export default function TabsLayout() {
         name="Messages"
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon routeName="Messages" focused={focused} />
+            <TabIcon 
+              name={focused ? "chatbubble" : "chatbubble-outline"} 
+              label="Messages" 
+              focused={focused} 
+            />
           ),
         }}
       />
@@ -169,7 +91,11 @@ export default function TabsLayout() {
         name="Profile"
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon routeName="Profile" focused={focused} />
+            <TabIcon 
+              name={focused ? "person" : "person-outline"} 
+              label="Profile" 
+              focused={focused} 
+            />
           ),
         }}
       />
@@ -177,29 +103,30 @@ export default function TabsLayout() {
   );
 }
 
+function TabIcon({ name, label, focused }: { name: string; label: string; focused: boolean }) {
+  return (
+    <View style={styles.tabItem}>
+      <View style={styles.iconContainer}>
+        <Ionicons
+          name={name as any}
+          size={focused ? 26 : 24}
+          color={focused ? "#eff599ff" : "#989898"}
+        />
+        <Text style={[styles.tabText, { opacity: focused ? 1 : 0 }]}>
+          {label}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  tabBar: {
-    backgroundColor: "#101010",
-    borderTopColor: "#1C1C1E",
-    borderTopWidth: 1,
-    height: Platform.OS === "ios" ? 90 : 110,
-    paddingBottom: Platform.OS === "ios" ? 25 : 35,
-    paddingTop: 12,
-  },
   tabItem: {
     alignItems: "center",
     justifyContent: "center",
-    height: Platform.OS === "ios" ? 60 : 70,
+    height: Platform.OS === "ios" ? 50 : 40,
     paddingVertical: 8,
     minWidth: 70,
-    position: "relative",
-  },
-  backgroundHighlight: {
-    position: "absolute",
-    backgroundColor: "rgba(255, 255, 255, 0.15)", // Subtle white overlay
-    borderRadius: 16,
-    width: 60,
-    height: 60,
   },
   iconContainer: {
     alignItems: "center",
@@ -211,6 +138,5 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     marginTop: 4,
     textAlign: "center",
-    includeFontPadding: false,
   },
 });
