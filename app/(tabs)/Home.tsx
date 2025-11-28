@@ -67,9 +67,9 @@ const Home: React.FC<HomeProps> = ({ navigation }) => {
       count: "245 salons"
     },
     {
-      name: "BarberShop",
-      image: "https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=200&h=200&fit=crop&crop=center",
-      count: "189 barbers"
+      name: "Tattoo Shop",
+      image:
+        "https://images.unsplash.com/photo-1605648916483-9a98044d15c3?w=150&h=150&fit=crop&crop=center",
     },
     {
     name: "Nail Salon",
@@ -123,16 +123,9 @@ const Home: React.FC<HomeProps> = ({ navigation }) => {
 
   const recommendedSalons: Salon[] = [
     {
-      id: 1,
-      name: "Glamour Hair Studio",
-      rating: 4.9,
-      reviews: 284,
-      distance: "0.8 km",
-      image: "https://images.unsplash.com/photo-1562322140-8baeececf3df?w=300&h=200&fit=crop",
-      services: ["Haircut", "Coloring", "Styling"],
-      openUntil: "20:00",
-      priceRange: "$$",
-      featured: true
+      name: "Piercing",
+      image:
+        "https://images.unsplash.com/photo-1594736797933-d0401ba94693?w=150&h=150&fit=crop&crop=center",
     },
     {
     id: 2,
@@ -220,25 +213,66 @@ const Home: React.FC<HomeProps> = ({ navigation }) => {
       salon: "Serenity Spa",
       experience: "6 years experience"
     },
+  ];
+
+  const specialOffers = [
     {
-      id: "4",
-      name: "Emma Wilson",
-      specialty: "Nail Artist",
-      rating: 4.9,
-      reviews: 156,
-      image: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=150&h=150&fit=crop&crop=face",
-      salon: "Luxe Nails",
-      experience: "5 years experience"
+      id: 1,
+      title: "50% Off First Visit",
+      description: "For new customers only",
+      code: "WELCOME50",
+      color: "#FF6B6B",
+    },
+    {
+      id: 2,
+      title: "Free Manicure",
+      description: "With any hair service",
+      code: "FREEMANI",
+      color: "#4ECDC4",
+    },
+    {
+      id: 3,
+      title: "Student Discount",
+      description: "20% off all services",
+      code: "STUDENT20",
+      color: "#45B7D1",
     },
   ];
 
-  const handleViewAllAppointments = () => {
-    navigation.navigate('Appointments');
-  };
+  return (
+    <SafeAreaView className="flex-1 bg-white">
+      {/* Header with Larger Logo */}
+      <View className="px-6 pt-6">
+        <View className="flex-row justify-between items-center">
+          <View className="flex-row items-center">
+            <Image
+              source={require("../../assets/images/logopng.png")}
+              className="w-16 h-16"
+              resizeMode="contain"
+            />
+          </View>
+          <TouchableOpacity className="bg-gray-100 p-3 rounded-full">
+            <Ionicons name="notifications-outline" size={24} color="#4A90E2" />
+          </TouchableOpacity>
+        </View>
+      </View>
 
-  const handleViewAllProfessionals = () => {
-    navigation.navigate('Professionals');
-  };
+      {/* Search Bar */}
+      <View className="px-6 pt-4">
+        <View className="relative">
+          <Ionicons
+            name="search"
+            size={20}
+            color="#9CA3AF"
+            style={{ position: "absolute", left: 16, top: 16, zIndex: 10 }}
+          />
+          <TextInput
+            placeholder="Search for salons or services..."
+            className="w-full bg-gray-50 rounded-2xl px-12 py-4 text-base border border-gray-200"
+            placeholderTextColor="#9CA3AF"
+          />
+        </View>
+      </View>
 
   const handleProfessionalPress = (professional: Professional) => {
     navigation.navigate('ProfessionalDetails', { professionalId: professional.id });
@@ -247,14 +281,8 @@ const Home: React.FC<HomeProps> = ({ navigation }) => {
   return (
     <SafeAreaView className="flex-1 bg-white">
       <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
-        {/* Header */}
-        <Animated.View 
-          className="px-6 pt-8 pb-4"
-          style={{
-            opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }]
-          }}
-        >
+        {/* Categories Section - First */}
+        <View className="px-6 pt-6">
           <View className="flex-row justify-between items-center mb-4">
             <View>
               <Text className="text-3xl font-light text-black mb-1">Saha</Text>
@@ -265,19 +293,86 @@ const Home: React.FC<HomeProps> = ({ navigation }) => {
             </TouchableOpacity>
           </View>
 
-          {/* Search Bar */}
-          <View className="relative">
-            <TextInput
-              placeholder="Search for services, salons..."
-              className="w-full bg-gray-50 rounded-2xl px-6 py-4 text-base text-black border border-gray-200 pl-12"
-              placeholderTextColor="#9CA3AF"
-            />
-            <Ionicons
-              name="search"
-              size={20}
-              color="#9CA3AF"
-              style={{ position: "absolute", left: 20, top: 14 }}
-            />
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            className="flex-row"
+          >
+            {categories.map((category, index) => (
+              <TouchableOpacity
+                key={index}
+                className="items-center mr-5"
+                style={{ width: 80 }}
+              >
+                <View className="relative">
+                  <Image
+                    source={{ uri: category.image }}
+                    className="w-16 h-16 rounded-full mb-2"
+                    resizeMode="cover"
+                  />
+                  <View
+                    className="absolute inset-0 rounded-full border-2 border-white shadow-sm"
+                    style={{
+                      shadowColor: "#000",
+                      shadowOffset: { width: 0, height: 1 },
+                      shadowOpacity: 0.1,
+                      shadowRadius: 2,
+                    }}
+                  />
+                </View>
+                <Text className="text-gray-800 font-medium text-xs text-center leading-tight">
+                  {category.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Special Offers Banner - Displayed directly without clicking */}
+        <View className="px-6 pt-6">
+          <View className="flex-row justify-between items-center mb-4">
+            <Text className="text-xl font-bold text-gray-900">
+              Special Offers
+            </Text>
+          </View>
+
+          <View className="space-y-3">
+            {specialOffers.map((offer) => (
+              <View
+                key={offer.id}
+                className="rounded-2xl p-5"
+                style={{
+                  backgroundColor: offer.color,
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 12,
+                  elevation: 5,
+                }}
+              >
+                <Text className="text-white text-lg font-bold mb-1">
+                  {offer.title}
+                </Text>
+                <Text className="text-white text-sm opacity-90 mb-3">
+                  {offer.description}
+                </Text>
+                <View className="bg-white rounded-lg px-3 py-2 self-start">
+                  <Text className="text-gray-900 font-mono font-bold">
+                    Code: {offer.code}
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {/* Recommended Salons Section */}
+        <View className="px-6 pt-6">
+          <View className="flex-row justify-between items-center mb-4">
+            <Text className="text-xl font-bold text-gray-900">Recommended</Text>
+            <TouchableOpacity>
+              <Text className="text-[#4A90E2] font-semibold">See All</Text>
+            </TouchableOpacity>
           </View>
         </Animated.View>
 
@@ -291,15 +386,28 @@ const Home: React.FC<HomeProps> = ({ navigation }) => {
           <SponsoredCarousel offers={sponsoredOffers} />
         </Animated.View>
 
-        {/* Categories */}
-        <CategoriesSection categories={categories} />
-
-        {/* Next Appointment Section */}
-        <View className="px-6">
-          <NextAppointmentSection 
-            upcomingBookings={upcomingBookings}
-            onViewAll={handleViewAllAppointments}
-          />
+        {/* Quick Actions Footer */}
+        <View className="px-6 pt-6">
+          <View className="bg-gray-50 rounded-2xl p-6">
+            <Text className="text-lg font-bold text-gray-900 text-center mb-3">
+              Need Help Choosing?
+            </Text>
+            <Text className="text-gray-600 text-sm text-center mb-4">
+              Our beauty experts can help you find the perfect service
+            </Text>
+            <View className="flex-row space-x-3">
+              <TouchableOpacity className="flex-1 bg-[#4A90E2] rounded-xl py-3">
+                <Text className="text-white font-semibold text-center">
+                  Book Consultation
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="flex-1 bg-white border border-gray-300 rounded-xl py-3">
+                <Text className="text-gray-900 font-semibold text-center">
+                  Chat with Expert
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
 
         {/* Best Rated Professionals */}

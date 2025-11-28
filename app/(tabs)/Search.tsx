@@ -7,178 +7,64 @@ import {
   FlatList,
   ScrollView,
   Modal,
+  StyleSheet,
   Platform,
-  Image,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-
-// Type definitions
-interface SearchResult {
-  id: string;
-  name: string;
-  category: string;
-  city: string;
-  rating: number;
-  reviews: number;
-  image: string;
-  priceRange: string;
-  duration: string;
-  distance: string;
-  isOpen: boolean;
-  offers: boolean;
-  homeService: boolean;
-  topRated: boolean;
-}
-
-interface Filters {
-  offers: boolean;
-  homeService: boolean;
-  topRated: boolean;
-  openNow: boolean;
-}
 
 export default function SearchScreen() {
-  const router = useRouter();
   const [city, setCity] = useState("");
   const [showCityModal, setShowCityModal] = useState(false);
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [category, setCategory] = useState("All");
-  const [filters, setFilters] = useState<Filters>({
+  const [filters, setFilters] = useState({
     offers: false,
     homeService: false,
     topRated: false,
-    openNow: false,
   });
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<SearchResult[]>([]);
-  const [showFilters, setShowFilters] = useState(false);
+  const [results, setResults] = useState([]);
 
   const categories = [
     "All",
-    "Hair Salon",
     "Barber",
     "Nails",
+    "Hair",
     "Spa",
     "Massage",
     "Makeup",
-    "Eyebrows",
-    "Skincare",
   ];
-
-  const cities = ["Tunis", "Sousse", "Sfax", "Nabeul", "Bizerte", "Monastir", "Hammamet", "Djerba"];
+  const cities = ["Tunis", "Sousse", "Sfax", "Nabeul", "Bizerte", "Monastir"];
 
   const handleSearch = () => {
-    // Mock data with more details
-    const mockResults: SearchResult[] = [
+    // Mock data
+    const mockResults = [
       {
         id: "1",
-        name: "Glamour Hair Studio",
-        category: "Hair Salon",
-        city: "Tunis",
-        rating: 4.9,
-        reviews: 284,
-        image: "https://images.unsplash.com/photo-1562322140-8baeececf3df?w=300&h=200&fit=crop",
-        priceRange: "$$$",
-        duration: "45min",
-        distance: "1.2km",
-        isOpen: true,
-        offers: true,
-        homeService: false,
-        topRated: true,
-      },
-      {
-        id: "2",
-        name: "Elite Barber Shop",
+        name: "Barber Shop Deluxe",
         category: "Barber",
-        city: "Sousse",
-        rating: 4.8,
-        reviews: 156,
-        image: "https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=300&h=200&fit=crop",
-        priceRange: "$$",
-        duration: "30min",
-        distance: "2.5km",
-        isOpen: true,
-        offers: false,
-        homeService: true,
-        topRated: true,
+        city: "Tunis",
       },
-      {
-        id: "3",
-        name: "Relaxation Spa",
-        category: "Spa",
-        city: "Nabeul",
-        rating: 4.7,
-        reviews: 89,
-        image: "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=300&h=200&fit=crop",
-        priceRange: "$$$$",
-        duration: "2h",
-        distance: "3.1km",
-        isOpen: false,
-        offers: true,
-        homeService: false,
-        topRated: false,
-      },
-      {
-        id: "4",
-        name: "Nail Art Studio",
-        category: "Nails",
-        city: "Sfax",
-        rating: 4.6,
-        reviews: 203,
-        image: "https://images.unsplash.com/photo-1607778833979-4c13c14a8d71?w=300&h=200&fit=crop",
-        priceRange: "$$",
-        duration: "1h",
-        distance: "0.8km",
-        isOpen: true,
-        offers: false,
-        homeService: true,
-        topRated: false,
-      },
+      { id: "2", name: "Glamour Nails", category: "Nails", city: "Sousse" },
+      { id: "3", name: "Relax Spa", category: "Spa", city: "Nabeul" },
+      { id: "4", name: "Modern Cuts", category: "Barber", city: "Sfax" },
     ];
 
-    const filtered = mockResults.filter((item) => {
-      const matchesCategory = category === "All" || item.category === category;
-      const matchesCity = city === "" || item.city === city;
-      const matchesQuery = item.name.toLowerCase().includes(query.toLowerCase()) || 
-                          item.category.toLowerCase().includes(query.toLowerCase());
-      const matchesOffers = !filters.offers || item.offers;
-      const matchesHomeService = !filters.homeService || item.homeService;
-      const matchesTopRated = !filters.topRated || item.topRated;
-      const matchesOpenNow = !filters.openNow || item.isOpen;
-
-      return matchesCategory && matchesCity && matchesQuery && 
-             matchesOffers && matchesHomeService && matchesTopRated && matchesOpenNow;
-    });
-    
+    const filtered = mockResults.filter(
+      (item) =>
+        (category === "All" || item.category === category) &&
+        (city === "" || item.city === city) &&
+        item.name.toLowerCase().includes(query.toLowerCase())
+    );
     setResults(filtered);
   };
 
-  const onDateChange = (event: any, selectedDate?: Date) => {
+  const onDateChange = (event, selectedDate) => {
     const currentDate = selectedDate || date;
     setShowDatePicker(Platform.OS === "ios");
     setDate(currentDate);
-  };
-
-  const formatDate = (date: Date) => {
-    const today = new Date();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(today.getDate() + 1);
-
-    if (date.toDateString() === today.toDateString()) {
-      return "Today";
-    } else if (date.toDateString() === tomorrow.toDateString()) {
-      return "Tomorrow";
-    } else {
-      return date.toLocaleDateString('en-US', { 
-        weekday: 'short', 
-        month: 'short', 
-        day: 'numeric' 
-      });
-    }
   };
 
   const ResultCard = ({ item }: { item: SearchResult }) => (
@@ -248,311 +134,267 @@ export default function SearchScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      <View className="flex-1 bg-white">
-        {/* Header */}
-        <View className="bg-white border-b border-gray-200 px-6 py-4">
-          <Text className="text-2xl font-semibold text-gray-900">
-            Discover Services
-          </Text>
-          <Text className="text-gray-600 text-sm mt-1">
-            Find the perfect salon for your needs
-          </Text>
-        </View>
+      <View style={styles.container}>
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {/* Header */}
+          <Text style={styles.header}>Find your next appointment ✂️</Text>
 
-        <ScrollView showsVerticalScrollIndicator={false} className="flex-1 px-6">
-          {/* Search Bar */}
-          <View className="relative mt-4 mb-4">
-            <TextInput
-              placeholder="Search for salons, services..."
-              placeholderTextColor="#9CA3AF"
-              value={query}
-              onChangeText={setQuery}
-              className="border border-gray-300 rounded-xl px-4 h-12 text-base text-gray-900 bg-white pl-12"
-            />
-            <Ionicons 
-              name="search" 
-              size={20} 
-              color="#9CA3AF" 
-              style={{ position: 'absolute', left: 16, top: 14 }}
-            />
-          </View>
-
-          {/* Location & Date Row */}
-          <View className="flex-row space-x-3 mb-4">
-            <TouchableOpacity
-              className="flex-1 border border-gray-300 rounded-xl p-3 flex-row items-center"
-              onPress={() => setShowCityModal(true)}
-            >
-              <Ionicons name="location" size={18} color="#666" />
-              <Text className="text-gray-700 ml-2 text-sm font-medium flex-1">
-                {city ? city : "Location"}
-              </Text>
-              <Ionicons name="chevron-down" size={16} color="#666" />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              className="flex-1 border border-gray-300 rounded-xl p-3 flex-row items-center"
-              onPress={() => setShowDatePicker(true)}
-            >
-              <Ionicons name="calendar" size={18} color="#666" />
-              <Text className="text-gray-700 ml-2 text-sm font-medium flex-1">
-                {formatDate(date)}
-              </Text>
-              <Ionicons name="chevron-down" size={16} color="#666" />
-            </TouchableOpacity>
-          </View>
-
-          {/* Categories */}
-          <View className="mb-4">
-            <Text className="text-base font-semibold text-gray-900 mb-3">
-              Categories
+          {/* City Selector */}
+          <TouchableOpacity
+            style={styles.inputField}
+            onPress={() => setShowCityModal(true)}
+          >
+            <Text style={styles.inputLabel}>
+              {city ? `📍 ${city}` : "Select City"}
             </Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={{ flexDirection: 'row' }}
-            >
-              {categories.map((cat) => (
-                <TouchableOpacity
-                  key={cat}
-                  className={`px-4 py-2.5 rounded-xl mr-3 border ${
-                    category === cat ? "bg-black border-black" : "bg-white border-gray-300"
-                  }`}
-                  onPress={() => setCategory(cat)}
-                >
-                  <Text
-                    className={`text-sm font-medium ${
-                      category === cat ? "text-white" : "text-gray-700"
-                    }`}
-                  >
-                    {cat}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
+          </TouchableOpacity>
 
-          {/* Filters */}
-          <View className="mb-6">
-            <View className="flex-row justify-between items-center mb-3">
-              <Text className="text-base font-semibold text-gray-900">
-                Filters
-              </Text>
-              <TouchableOpacity onPress={() => setShowFilters(!showFilters)}>
-                <Text className="text-black text-sm font-medium">
-                  {showFilters ? 'Hide' : 'Show'} Filters
+          {/* Date Selector */}
+          <TouchableOpacity
+            style={styles.inputField}
+            onPress={() => setShowDatePicker(true)}
+          >
+            <Text style={styles.inputLabel}>📅 {date.toDateString()}</Text>
+          </TouchableOpacity>
+
+          {/* Search Bar */}
+          <TextInput
+            placeholder="Search for a salon or service..."
+            value={query}
+            onChangeText={setQuery}
+            style={styles.searchBar}
+          />
+
+          {/* Category Scroll */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.categories}
+          >
+            {categories.map((cat) => (
+              <TouchableOpacity
+                key={cat}
+                style={[
+                  styles.categoryChip,
+                  category === cat && styles.activeCategory,
+                ]}
+                onPress={() => setCategory(cat)}
+              >
+                <Text
+                  style={[
+                    styles.categoryText,
+                    category === cat && styles.activeCategoryText,
+                  ]}
+                >
+                  {cat}
                 </Text>
               </TouchableOpacity>
-            </View>
+            ))}
+          </ScrollView>
 
-            {showFilters && (
-              <View className="flex-row flex-wrap justify-between">
-                {[
-                  { key: 'openNow', label: 'Open Now', icon: 'time' },
-                  { key: 'topRated', label: 'Top Rated', icon: 'star' },
-                  { key: 'offers', label: 'Special Offers', icon: 'pricetag' },
-                  { key: 'homeService', label: 'Home Service', icon: 'home' },
-                ].map((filter) => (
-                  <TouchableOpacity
-                    key={filter.key}
-                    className={`w-[48%] py-3 rounded-xl border mb-3 flex-row items-center justify-center ${
-                      filters[filter.key as keyof Filters]
-                        ? "bg-black border-black"
-                        : "bg-white border-gray-300"
-                    }`}
-                    onPress={() =>
-                      setFilters((prev) => ({ 
-                        ...prev, 
-                        [filter.key]: !prev[filter.key as keyof Filters] 
-                      }))
-                    }
-                  >
-                    <Ionicons 
-                      name={filter.icon as any} 
-                      size={16} 
-                      color={filters[filter.key as keyof Filters] ? "#fff" : "#666"} 
-                      style={{ marginRight: 8 }}
-                    />
-                    <Text
-                      className={`text-sm font-medium ${
-                        filters[filter.key as keyof Filters] ? "text-white" : "text-gray-700"
-                      }`}
-                    >
-                      {filter.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
+          {/* Filter Buttons */}
+          <View style={styles.filtersRow}>
+            {Object.keys(filters).map((key) => (
+              <TouchableOpacity
+                key={key}
+                style={[
+                  styles.filterBtn,
+                  filters[key] && styles.activeFilterBtn,
+                ]}
+                onPress={() =>
+                  setFilters((prev) => ({ ...prev, [key]: !prev[key] }))
+                }
+              >
+                <Text
+                  style={[
+                    styles.filterText,
+                    filters[key] && styles.activeFilterText,
+                  ]}
+                >
+                  {key === "offers"
+                    ? "✨ Special Offers"
+                    : key === "homeService"
+                    ? "🏠 Home Services"
+                    : "⭐ Top Rated"}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
 
           {/* Search Button */}
-          <TouchableOpacity 
-            className="bg-black rounded-xl py-4 mb-6"
-            onPress={handleSearch}
-          >
-            <Text className="text-white text-base font-semibold text-center">
-              Search Services
-            </Text>
+          <TouchableOpacity style={styles.searchBtn} onPress={handleSearch}>
+            <Text style={styles.searchBtnText}>Search</Text>
           </TouchableOpacity>
 
           {/* Results */}
           {results.length > 0 && (
-            <View className="mb-6">
-              <View className="flex-row justify-between items-center mb-4">
-                <Text className="text-xl font-semibold text-gray-900">
-                  Found {results.length} Salons
-                </Text>
-                <TouchableOpacity onPress={() => setResults([])}>
-                  <Text className="text-gray-500 text-sm">Clear</Text>
-                </TouchableOpacity>
-              </View>
-              
+            <>
+              <Text style={styles.sectionTitle}>Results</Text>
               {results.map((item) => (
-                <ResultCard key={item.id} item={item} />
+                <View key={item.id} style={styles.resultCard}>
+                  <Text style={styles.resultName}>{item.name}</Text>
+                  <Text style={styles.resultDetails}>
+                    {item.category} • {item.city}
+                  </Text>
+                </View>
               ))}
-            </View>
+            </>
           )}
 
-          {results.length === 0 && query && (
-            <View className="items-center justify-center py-12">
-              <Ionicons name="search" size={48} color="#9CA3AF" />
-              <Text className="text-gray-500 text-lg font-medium mt-4 text-center">
-                No results found for "{query}"
-              </Text>
-              <Text className="text-gray-400 text-sm mt-2 text-center">
-                Try adjusting your search or filters
-              </Text>
-            </View>
-          )}
-
-          {results.length === 0 && !query && (
-            <View className="items-center justify-center py-12">
-              <Ionicons name="search-outline" size={48} color="#9CA3AF" />
-              <Text className="text-gray-500 text-lg font-medium mt-4 text-center">
-                Search for salons and services
-              </Text>
-              <Text className="text-gray-400 text-sm mt-2 text-center">
-                Use the filters above to find exactly what you need
-              </Text>
-            </View>
+          {results.length === 0 && (
+            <Text style={styles.emptyText}>Search to see results 🔍</Text>
           )}
         </ScrollView>
 
         {/* City Modal */}
         <Modal visible={showCityModal} transparent animationType="slide">
-          <View className="flex-1 justify-end">
-            {/* Transparent Overlay */}
-            <TouchableOpacity 
-              className="flex-1"
-              onPress={() => setShowCityModal(false)}
-            />
-            
-            {/* Modal Content */}
-            <View 
-              className="bg-white rounded-t-3xl p-6 max-h-4/5"
-              style={{
-                shadowColor: '#000',
-                shadowOffset: {
-                  width: 0,
-                  height: -2,
-                },
-                shadowOpacity: 0.25,
-                shadowRadius: 20,
-                elevation: 20,
-              }}
-            >
-              <View className="flex-row justify-between items-center mb-6">
-                <Text className="text-xl font-semibold text-gray-900">
-                  Select City
-                </Text>
-                <TouchableOpacity 
-                  onPress={() => setShowCityModal(false)}
-                  className="w-8 h-8 items-center justify-center"
-                >
-                  <Ionicons name="close" size={24} color="#666" />
-                </TouchableOpacity>
-              </View>
-              
+          <View style={styles.modalContainer}>
+            <View style={styles.modalBox}>
+              <Text style={styles.modalTitle}>Select City</Text>
               <FlatList
                 data={cities}
                 keyExtractor={(item) => item}
-                showsVerticalScrollIndicator={false}
                 renderItem={({ item }) => (
                   <TouchableOpacity
-                    className="py-4 border-b border-gray-200 flex-row items-center"
+                    style={styles.cityItem}
                     onPress={() => {
                       setCity(item);
                       setShowCityModal(false);
                     }}
                   >
-                    <Ionicons name="location" size={18} color="#666" style={{ marginRight: 12 }} />
-                    <Text className="text-base text-gray-700 font-medium">{item}</Text>
+                    <Text style={styles.cityText}>{item}</Text>
                   </TouchableOpacity>
                 )}
               />
+              <TouchableOpacity
+                style={styles.closeModal}
+                onPress={() => setShowCityModal(false)}
+              >
+                <Text style={{ color: "white" }}>Close</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </Modal>
 
-        {/* Date Picker Modal */}
+        {/* Date Picker */}
         {showDatePicker && (
-          <Modal transparent animationType="slide" visible={showDatePicker}>
-            <View className="flex-1 justify-end">
-              {/* Transparent Overlay */}
-              <TouchableOpacity 
-                className="flex-1"
-                onPress={() => setShowDatePicker(false)}
-              />
-              
-              {/* Modal Content */}
-              <View 
-                className="bg-white rounded-t-3xl p-6"
-                style={{
-                  shadowColor: '#000',
-                  shadowOffset: {
-                    width: 0,
-                    height: -2,
-                  },
-                  shadowOpacity: 0.25,
-                  shadowRadius: 20,
-                  elevation: 20,
-                }}
-              >
-                <View className="flex-row justify-between items-center mb-4">
-                  <Text className="text-xl font-semibold text-gray-900">
-                    Select Date
-                  </Text>
-                  <TouchableOpacity 
-                    onPress={() => setShowDatePicker(false)}
-                    className="w-8 h-8 items-center justify-center"
-                  >
-                    <Ionicons name="close" size={24} color="#666" />
-                  </TouchableOpacity>
-                </View>
-                
-                <DateTimePicker
-                  value={date}
-                  mode="date"
-                  display="spinner"
-                  onChange={onDateChange}
-                  minimumDate={new Date()}
-                  style={{ backgroundColor: 'white' }}
-                />
-                
-                <TouchableOpacity
-                  className="bg-black rounded-xl py-4 mt-4"
-                  onPress={() => setShowDatePicker(false)}
-                >
-                  <Text className="text-white text-base font-semibold text-center">
-                    Confirm Date
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </Modal>
+          <DateTimePicker
+            value={date}
+            mode="date"
+            display="default"
+            onChange={onDateChange}
+          />
         )}
       </View>
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: "#fff", padding: 16 },
+  header: {
+    fontSize: 20,
+    fontWeight: "700",
+    marginBottom: 20,
+    color: "#222",
+  },
+  inputField: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
+  },
+  inputLabel: { fontSize: 16, color: "#444" },
+  searchBar: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 10,
+    paddingHorizontal: 15,
+    height: 45,
+    marginBottom: 15,
+  },
+  categories: { marginBottom: 10 },
+  categoryChip: {
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    backgroundColor: "#f4f4f4",
+    borderRadius: 20,
+    marginRight: 8,
+  },
+  activeCategory: { backgroundColor: "#222" },
+  categoryText: { color: "#333", fontWeight: "500" },
+  activeCategoryText: { color: "#fff" },
+  filtersRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    marginVertical: 10,
+  },
+  filterBtn: {
+    width: "48%",
+    marginVertical: 5,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  activeFilterBtn: { backgroundColor: "#222", borderColor: "#222" },
+  filterText: { color: "#333", fontWeight: "500", textAlign: "center" },
+  activeFilterText: { color: "#fff" },
+  searchBtn: {
+    backgroundColor: "#000",
+    paddingVertical: 15,
+    borderRadius: 10,
+    marginTop: 10,
+    alignItems: "center",
+  },
+  searchBtnText: { color: "#fff", fontSize: 16, fontWeight: "600" },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginVertical: 15,
+    color: "#222",
+  },
+  resultCard: {
+    padding: 15,
+    backgroundColor: "#f9f9f9",
+    borderRadius: 10,
+    marginBottom: 10,
+  },
+  resultName: { fontSize: 16, fontWeight: "600", color: "#222" },
+  resultDetails: { color: "gray", marginTop: 4 },
+  emptyText: { textAlign: "center", color: "gray", marginTop: 40 },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    padding: 20,
+  },
+  modalBox: {
+    backgroundColor: "white",
+    borderRadius: 10,
+    padding: 20,
+    maxHeight: "80%",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 15,
+    color: "#111",
+  },
+  cityItem: {
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  cityText: { fontSize: 16, color: "#333" },
+  closeModal: {
+    backgroundColor: "#000",
+    marginTop: 15,
+    padding: 12,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+});
