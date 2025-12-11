@@ -18,10 +18,10 @@ export default function TabsLayout() {
           backgroundColor: "#101010",
           borderTopColor: "#1C1C1E",
           borderTopWidth: 1,
-          height: Platform.OS === "ios" ? 85 : 65,
-          paddingBottom: Platform.OS === "ios" ? 25 : 10,
+          height: Platform.OS === "ios" ? 85 : 90,
+          paddingBottom: Platform.OS === "ios" ? 25 : 20,
           paddingTop: 12,
-          position: 'absolute',
+          position: "absolute",
           elevation: 0,
           shadowOpacity: 0,
           borderBottomWidth: 0,
@@ -43,10 +43,10 @@ export default function TabsLayout() {
         name="Home"
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon 
-              name={focused ? "home" : "home-outline"} 
-              label="Home" 
-              focused={focused} 
+            <TabIcon
+              name={focused ? "home" : "home-outline"}
+              label="Home"
+              focused={focused}
             />
           ),
         }}
@@ -55,10 +55,10 @@ export default function TabsLayout() {
         name="Search"
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon 
-              name={focused ? "search" : "search-outline"} 
-              label="Search" 
-              focused={focused} 
+            <TabIcon
+              name={focused ? "search" : "search-outline"}
+              label="Search"
+              focused={focused}
             />
           ),
         }}
@@ -67,10 +67,10 @@ export default function TabsLayout() {
         name="Bookings"
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon 
-              name={focused ? "calendar" : "calendar-outline"} 
-              label="Bookings" 
-              focused={focused} 
+            <TabIcon
+              name={focused ? "calendar" : "calendar-outline"}
+              label="Bookings"
+              focused={focused}
             />
           ),
         }}
@@ -79,10 +79,10 @@ export default function TabsLayout() {
         name="Messages"
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon 
-              name={focused ? "chatbubble" : "chatbubble-outline"} 
-              label="Messages" 
-              focused={focused} 
+            <TabIcon
+              name={focused ? "chatbubble" : "chatbubble-outline"}
+              label="Messages"
+              focused={focused}
             />
           ),
         }}
@@ -91,10 +91,10 @@ export default function TabsLayout() {
         name="Profile"
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon 
-              name={focused ? "person" : "person-outline"} 
-              label="Profile" 
-              focused={focused} 
+            <TabIcon
+              name={focused ? "person" : "person-outline"}
+              label="Profile"
+              focused={focused}
             />
           ),
         }}
@@ -103,7 +103,15 @@ export default function TabsLayout() {
   );
 }
 
-function TabIcon({ name, label, focused }: { name: string; label: string; focused: boolean }) {
+function TabIcon({
+  name,
+  label,
+  focused,
+}: {
+  name: string;
+  label: string;
+  focused: boolean;
+}) {
   return (
     <View style={styles.tabItem}>
       <View style={styles.iconContainer}>

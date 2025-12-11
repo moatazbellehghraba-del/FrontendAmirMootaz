@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import {
   View,
   Text,
@@ -7,16 +7,50 @@ import {
   ScrollView,
   Image,
   Dimensions,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react-native";
 import Icon from "react-native-vector-icons/FontAwesome5";
-
+import { useMutation } from "@apollo/client/react";
+import * as SecureStore from "expo-secure-store";
+import { LOGIN } from "../../graphql/auth/mutations/auth";
+import { client } from "@/apollo/client";
+import { GET_CURRENT_CLIENT } from "../../graphql/auth/queries/auth";
+import { AuthContext } from "@/context/AuthContext";
 // Interface for login data
 interface LoginData {
   email: string;
   password: string;
+}
+interface LoginResponse {
+  login: {
+    accessToken: string;
+    refreshToken: string;
+  };
+}
+interface CurrentClientResponse {
+  me: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phoneNumber: string;
+    gender?: string;
+    dateOfBirth?: string;
+    profilePhoto?: string;
+    location?: {
+      lat: number;
+      long: number;
+    };
+    region?: string;
+    country?: string;
+    loyaltyPoints?: number;
+    favorites: string[];
+    bookings?: any[];
+    reviews?: any[];
+  };
 }
 
 const { width } = Dimensions.get("window");
@@ -28,7 +62,8 @@ const Login = () => {
     password: "",
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+
+  const [login, { loading }] = useMutation<LoginResponse>(LOGIN);
 
   // Calculate logo size to match loading screen (80% of screen width)
   const logoSize = width * 0.5;
@@ -42,80 +77,65 @@ const Login = () => {
   };
 
   // Handle login submission
+  const { login: authLogin } = useContext(AuthContext);
+
   const handleLogin = async () => {
     if (!loginData.email || !loginData.password) {
-      console.log("❌ Please fill in all fields");
+      Alert.alert("Please fill all fields");
       return;
     }
-    router.replace("/(tabs)/Home");
-    setIsLoading(true);
 
     try {
-      // Simulate API call
-      console.log("📤 Login data being sent to server:", {
-        email: loginData.email,
-        password: loginData.password,
-        timestamp: new Date().toISOString(),
-      });
-
-      // Simulate network request
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      // Simulate successful login response
-      const mockResponse = {
-        success: true,
-        user: {
-          id: "12345",
+      const response = await login({
+        variables: {
           email: loginData.email,
-          name: "John Doe",
-          token: "mock-jwt-token-here",
+          password: loginData.password,
         },
-        message: "Login successful!",
-      };
-      
-      console.log('✅ Login successful! Server response:', mockResponse);
-      console.log('📝 User data:', mockResponse.user);
-      console.log('🔐 Auth token:', mockResponse.user.token);
-      console.log('🚀 Navigating to Home screen...');
-      router.push('/(tabs)/Home');
-      
-      // Clear form after successful "login"
-      setLoginData({
-        email: "",
-        password: "",
       });
 
-      console.log("🔄 Form cleared. Ready for next login attempt.");
-    } catch (error) {
-      console.log("❌ Login error:", error);
-      // Simulate error response
-      console.log("🚫 Would show error message to user here");
-    } finally {
-      setIsLoading(false);
+      const tokens = response.data?.login;
+
+      if (!tokens) {
+        Alert.alert("Login failed");
+        return;
+      }
+
+      await SecureStore.setItemAsync("accessToken", tokens.accessToken);
+      await SecureStore.setItemAsync("refreshToken", tokens.refreshToken);
+      // 3️⃣ Fetch current client using the access token
+      const { data } = await client.query<CurrentClientResponse>({
+        query: GET_CURRENT_CLIENT,
+        fetchPolicy: "network-only",
+      });
+      console.log("value of data", data);
+      if (data?.me) {
+        await SecureStore.setItemAsync("currentUser", JSON.stringify(data.me));
+      }
+
+      Alert.alert("Success!", "You are logged in");
+      // 2️⃣ Save everything in context
+      if (!data || !data.me) {
+        Alert.alert("Error", "Failed to load user profile");
+        return;
+      }
+      await authLogin(tokens.accessToken, tokens.refreshToken, data.me);
+      router.replace("/(tabs)/Home");
+    } catch (error: any) {
+      console.log(error);
+      Alert.alert("Error", error.message);
     }
   };
 
   // Handle social login
-  const handleSocialLogin = (provider: string) => {
-    console.log(`🔗 ${provider} login clicked`);
-    console.log(`📤 Would redirect to ${provider} OAuth flow`);
-    console.log(`🔄 Would handle ${provider} authentication callback`);
-  };
+  const handleSocialLogin = (provider: string) => {};
 
   // Handle forgot password
-  const handleForgotPassword = () => {
-    console.log("🔑 Forgot password flow initiated");
-    console.log(
-      "📧 Would send password reset email to:",
-      loginData.email || "user@example.com"
-    );
-    console.log("🔄 Would navigate to password reset screen");
-  };
+  const handleForgotPassword = () => {};
 
   // Handle sign up navigation
   const handleSignUp = () => {
-    console.log("📝 Navigating to Sign Up page");
-    router.push("/(auth)/Signup");
+    router.navigate("/(auth)/Signup");
+    console.log("gooo");
   };
 
   return (
@@ -194,28 +214,15 @@ const Login = () => {
             {/* Login Button */}
             <TouchableOpacity
               className={`py-4 rounded-2xl items-center shadow-lg mb-6 ${
-                isLoading ? "bg-gray-400" : "bg-black"
+                loading ? "bg-gray-400" : "bg-black"
               }`}
               onPress={handleLogin}
-              disabled={isLoading}
+              disabled={loading}
             >
               <Text className="text-white font-semibold text-lg">
-                {isLoading ? "Signing In..." : "Sign In"}
+                {loading ? "Signing In..." : "Sign In"}
               </Text>
             </TouchableOpacity>
-
-            {/* Current Form Data Display */}
-            <View className="bg-gray-50 p-4 rounded-2xl mb-4 border border-gray-200">
-              <Text className="text-gray-600 text-sm font-medium mb-2">
-                Current Form Data:
-              </Text>
-              <Text className="text-black text-xs">
-                Email: {loginData.email || "Not entered"}
-              </Text>
-              <Text className="text-black text-xs">
-                Password: {loginData.password ? "••••••••" : "Not entered"}
-              </Text>
-            </View>
           </View>
 
           {/* Social Login Divider */}
