@@ -1,201 +1,683 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Switch } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { 
-  User, 
-  Settings, 
-  Calendar, 
-  Star, 
-  Edit3,
-  ChevronRight,
-  Heart,
-  Bell,
-  Shield,
-  HelpCircle,
-  LogOut,
-  Camera,
-  Clock,
+import DateTimePicker from "@react-native-community/datetimepicker";
+import * as Location from "expo-location";
+import { useRouter } from "expo-router";
+import {
+  Calendar,
+  ChevronDown,
+  Eye,
+  EyeOff,
+  Lock,
+  Mail,
   MapPin,
   Phone,
-  Mail
-} from 'lucide-react-native';
+  User,
+} from "lucide-react-native";
+import React, { useContext, useState } from "react";
+import {
+  Alert,
+  Dimensions,
+  Image,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import Icon from "react-native-vector-icons/FontAwesome5";
+import { useMutation } from "@apollo/client/react";
+import * as SecureStore from "expo-secure-store";
+import { REGISTER } from "../../graphql/auth/mutations/auth";
+import { client } from "@/apollo/client";
+import { GET_CURRENT_CLIENT } from "../../graphql/auth/queries/auth";
+import { AuthContext } from "@/context/AuthContext";
+// Interface for signup data
+// interface RegisterResponse {
+//   register: {
+//     accessToken: string;
+//     refreshToken: string;
+//   };
+//}
+interface RegisterResponse {
+  register: {
+    message: string;
+  };
+}
+interface CurrentClientResponse {
+  me: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phoneNumber: string;
+    gender?: string;
+    dateOfBirth?: string;
+    profilePhoto?: string;
+    location?: {
+      lat: number;
+      long: number;
+    };
+    region?: string;
+    country?: string;
+    loyaltyPoints?: number;
+    favorites: string[];
+    bookings?: any[];
+    reviews?: any[];
+  };
+}
+interface SignupData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  password: string;
+  confirmPassword: string;
+  gender: string;
+  dateOfBirth: Date;
+  latitude: number | null;
+  longitude: number | null;
+  region: string;
+  country: string;
+}
 
-const ProfileScreen = () => {
+const { width } = Dimensions.get("window");
+
+const Signup = () => {
   const router = useRouter();
-  const [notifications, setNotifications] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
+  const [signupData, setSignupData] = useState<SignupData>({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    password: "",
+    confirmPassword: "",
+    gender: "",
+    dateOfBirth: new Date(),
+    latitude: null,
+    longitude: null,
+    region: "",
+    country: "",
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showGenderDropdown, setShowGenderDropdown] = useState(false);
 
-  const userData = {
-    name: 'Amira Ben Ahmed',
-    email: 'amira.benahmed@email.com',
-    phone: '+216 12 345 678',
-    location: 'Tunis, Tunisia',
-    memberSince: 'Jan 2023'
+  // Calculate logo size to match login screen
+  const logoSize = width * 0.5;
+
+  // Handle input changes
+  const handleInputChange = (
+    field: keyof SignupData,
+    value: string | Date | number | null
+  ) => {
+    setSignupData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
   };
 
-  const stats = [
-    { value: '24', label: 'Appointments', icon: Calendar },
-    { value: '2', label: 'Upcoming', icon: Clock },
-    { value: '1,250', label: 'Points', icon: Star }
-  ];
+  // Function to reverse geocode coordinates to address (region and country only)
+  const reverseGeocode = async (latitude: number, longitude: number) => {
+    try {
+      const geocode = await Location.reverseGeocodeAsync({
+        latitude,
+        longitude,
+      });
 
-  const upcomingAppointments = [
-    {
-      id: 1,
-      service: 'Haircut & Styling',
-      professional: 'Sophie Martin',
-      date: 'Dec 15, 2024',
-      time: '10:00 AM'
-    },
-    {
-      id: 2,
-      service: 'Facial Care',
-      professional: 'Léa Bernard',
-      date: 'Dec 18, 2024',
-      time: '2:00 PM'
+      if (geocode.length > 0) {
+        const address = geocode[0];
+        return {
+          region: address.region || "",
+          country: address.country || "",
+        };
+      }
+    } catch (error) {
+      console.log("Reverse geocoding error:", error);
     }
-  ];
 
-  const menuItems = [
-    { icon: User, title: 'Edit Profile', subtitle: 'Update your personal information' },
-    { icon: Bell, title: 'Notifications', subtitle: 'Manage your notifications', switch: true, value: notifications, onChange: setNotifications },
-    { icon: Shield, title: 'Privacy & Security', subtitle: 'Control your privacy settings' },
-    { icon: Heart, title: 'Favorites', subtitle: 'Your saved services and professionals' },
-    { icon: HelpCircle, title: 'Help & Support', subtitle: 'Get help and contact support' },
-  ];
+    return {
+      region: "",
+      country: "",
+    };
+  };
+
+  // Handle get location with reverse geocoding
+  const [register, { loading }] = useMutation<RegisterResponse>(REGISTER);
+  const handleGetLocation = async () => {
+    try {
+      setIsGettingLocation(true);
+
+      // Request location permissions
+      let { status } = await Location.requestForegroundPermissionsAsync();
+
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission Denied",
+          "Please enable location services to get your current location",
+          [{ text: "OK" }]
+        );
+        return;
+      }
+
+      // Get current location
+      let location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+
+      const latitude = location.coords.latitude;
+      const longitude = location.coords.longitude;
+
+      // Reverse geocode to get region and country
+      const address = await reverseGeocode(latitude, longitude);
+
+      setSignupData((prev) => ({
+        ...prev,
+        latitude: latitude,
+        longitude: longitude,
+        region: address.region,
+        country: address.country,
+      }));
+    } catch (error) {
+      console.log("Error getting location:", error);
+      Alert.alert(
+        "Error",
+        "Unable to get your current location. Please try again.",
+        [{ text: "OK" }]
+      );
+    } finally {
+      setIsGettingLocation(false);
+    }
+  };
+
+  // Handle date change
+  const handleDateChange = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      handleInputChange("dateOfBirth", selectedDate);
+    }
+  };
+
+  // Handle signup submission
+  const { login: authLogin } = useContext(AuthContext);
+  const handleSignup = async () => {
+    // Validation
+    if (
+      !signupData.firstName ||
+      !signupData.lastName ||
+      !signupData.email ||
+      !signupData.phone ||
+      !signupData.password ||
+      !signupData.confirmPassword ||
+      !signupData.gender
+    ) {
+      Alert.alert("Error", "Please fill in all required fields");
+      return;
+    }
+
+    if (signupData.password !== signupData.confirmPassword) {
+      Alert.alert("Error", "Passwords do not match");
+      return;
+    }
+
+    if (signupData.password.length < 6) {
+      Alert.alert("Error", "Password must be at least 6 characters");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Prepare data for backend
+      const signupPayload = {
+        firstName: signupData.firstName,
+        lastName: signupData.lastName,
+        email: signupData.email,
+        phoneNumber: signupData.phone,
+        password: signupData.password,
+        gender: signupData.gender,
+        dateOfBirth: signupData.dateOfBirth.toISOString(),
+        location: {
+          lat: signupData.latitude,
+          long: signupData.longitude,
+        },
+        region: signupData.region,
+        country: signupData.country,
+      };
+
+      console.log("Sending to backend:", signupPayload);
+      const res = await register({ variables: { input: signupPayload } });
+      console.log("this the value of res ", res);
+      // Ensure tokens exist
+      // const tokens = res.data?.register;
+      // if (!tokens) {
+      //   Alert.alert("Error", "No tokens returned from server");
+      //   return;
+      // }
+
+      // // Save tokens securely
+      // await SecureStore.setItemAsync("accessToken", tokens.accessToken);
+      // await SecureStore.setItemAsync("refreshToken", tokens.refreshToken);
+      // const { data } = await client.query<CurrentClientResponse>({
+      //   query: GET_CURRENT_CLIENT,
+      //   fetchPolicy: "network-only",
+      // });
+      // console.log("value of data", data);
+      // if (data?.me) {
+      //   await SecureStore.setItemAsync("currentUser", JSON.stringify(data.me));
+      // }
+      // Alert.alert("Success", "Account created successfully!");
+      // if (!data || !data.me) {
+      //   Alert.alert("Error", "Failed to load user profile");
+      //   return;
+      // }
+
+      router.push({
+        pathname: "/(auth)/Verification",
+        params: { email: signupData.email },
+      });
+    } catch (error: any) {
+      console.log("GraphQL Error:", JSON.stringify(error, null, 2));
+
+      const errorMessage =
+        error?.graphQLErrors?.[0]?.message ||
+        error?.message ||
+        "Signup failed. Please try again.";
+
+      Alert.alert("Error", errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle social signup
+  const handleSocialSignup = (provider: string) => {
+    console.log(`${provider} signup clicked`);
+  };
+
+  // Handle login navigation
+  const handleLogin = () => {
+    router.push("/(auth)/Login");
+  };
+
+  // Format date for display
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
+
+  // Clear location data
+  const handleClearLocation = () => {
+    setSignupData((prev) => ({
+      ...prev,
+      latitude: null,
+      longitude: null,
+      region: "",
+      country: "",
+    }));
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        
-        {/* Header */}
-        <View className="px-6 pt-8 pb-6">
-          <View className="flex-row items-center justify-between mb-8">
-            <Text className="text-3xl font-light text-black">Profile</Text>
-            <TouchableOpacity className="w-10 h-10 items-center justify-center">
-              <Settings size={22} color="#000" />
-            </TouchableOpacity>
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ flexGrow: 1 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View className="flex-1 px-4 py-4">
+          {/* Logo */}
+          <View className="items-center mb-6">
+            <Image
+              source={require("../../assets/images/logopng.png")}
+              style={{
+                width: logoSize,
+                height: logoSize,
+              }}
+              resizeMode="contain"
+            />
           </View>
 
-          {/* Profile Section */}
+          {/* Header */}
           <View className="items-center mb-8">
-            <View className="relative mb-4">
-              <View className="w-24 h-24 bg-gray-100 rounded-full items-center justify-center border-2 border-gray-200">
-                <Text className="text-gray-600 text-xl font-medium">AB</Text>
-              </View>
-              <TouchableOpacity className="absolute bottom-0 right-0 bg-black rounded-full p-2">
-                <Camera size={16} color="#fff" />
-              </TouchableOpacity>
-            </View>
-            <Text className="text-2xl font-normal text-black mb-1">{userData.name}</Text>
-            <Text className="text-gray-500 text-base">{userData.email}</Text>
-            <View className="flex-row items-center mt-2">
-              <MapPin size={14} color="#666" />
-              <Text className="text-gray-600 text-sm ml-1">{userData.location}</Text>
-            </View>
+            <Text className="text-4xl font-black text-black mb-2">
+              Create Account
+            </Text>
+            <Text className="text-lg text-gray-600 text-center">
+              Join our beauty community today
+            </Text>
           </View>
 
-          {/* Stats */}
-          <View className="flex-row justify-between bg-gray-50 rounded-2xl p-4 mb-8">
-            {stats.map((stat, index) => {
-              const Icon = stat.icon;
-              return (
-                <View key={index} className="items-center flex-1">
-                  <View className="w-12 h-12 bg-white rounded-full items-center justify-center mb-2 border border-gray-200">
-                    <Icon size={20} color="#000" />
+          {/* Signup Form */}
+          <View className="mb-6">
+            {/* Name Row - First Name & Last Name in same line with spacing */}
+            <View className="flex-row mb-4" style={{ gap: 12 }}>
+              {/* First Name */}
+              <View className="flex-1">
+                <View className="flex-row items-center border border-gray-300 rounded-2xl px-4 py-4">
+                  <User size={20} color="#6B7280" />
+                  <TextInput
+                    className="flex-1 ml-3 text-black text-base"
+                    placeholder="First Name"
+                    placeholderTextColor="#9CA3AF"
+                    value={signupData.firstName}
+                    onChangeText={(value) =>
+                      handleInputChange("firstName", value)
+                    }
+                    autoCapitalize="words"
+                  />
+                </View>
+              </View>
+
+              {/* Last Name */}
+              <View className="flex-1">
+                <View className="flex-row items-center border border-gray-300 rounded-2xl px-4 py-4">
+                  <User size={20} color="#6B7280" />
+                  <TextInput
+                    className="flex-1 ml-3 text-black text-base"
+                    placeholder="Last Name"
+                    placeholderTextColor="#9CA3AF"
+                    value={signupData.lastName}
+                    onChangeText={(value) =>
+                      handleInputChange("lastName", value)
+                    }
+                    autoCapitalize="words"
+                  />
+                </View>
+              </View>
+            </View>
+
+            {/* Email Input */}
+            <View className="flex-row items-center border border-gray-300 rounded-2xl px-4 py-4 mb-4">
+              <Mail size={20} color="#6B7280" />
+              <TextInput
+                className="flex-1 ml-3 text-black text-base"
+                placeholder="Enter your email"
+                placeholderTextColor="#9CA3AF"
+                value={signupData.email}
+                onChangeText={(value) => handleInputChange("email", value)}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoComplete="email"
+              />
+            </View>
+
+            {/* Phone Input */}
+            <View className="flex-row items-center border border-gray-300 rounded-2xl px-4 py-4 mb-4">
+              <Phone size={20} color="#6B7280" />
+              <TextInput
+                className="flex-1 ml-3 text-black text-base"
+                placeholder="Enter your phone number"
+                placeholderTextColor="#9CA3AF"
+                value={signupData.phone}
+                onChangeText={(value) => handleInputChange("phone", value)}
+                keyboardType="phone-pad"
+                autoComplete="tel"
+              />
+            </View>
+
+            {/* Password Row */}
+            <View className="flex-row mb-4" style={{ gap: 12 }}>
+              {/* Password */}
+              <View className="flex-1">
+                <View className="flex-row items-center border border-gray-300 rounded-2xl px-4 py-4">
+                  <Lock size={20} color="#6B7280" />
+                  <TextInput
+                    className="flex-1 ml-3 text-black text-base"
+                    placeholder="Password"
+                    placeholderTextColor="#9CA3AF"
+                    value={signupData.password}
+                    onChangeText={(value) =>
+                      handleInputChange("password", value)
+                    }
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                    autoComplete="password-new"
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <EyeOff size={20} color="#6B7280" />
+                    ) : (
+                      <Eye size={20} color="#6B7280" />
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Confirm Password */}
+              <View className="flex-1">
+                <View className="flex-row items-center border border-gray-300 rounded-2xl px-4 py-4">
+                  <Lock size={20} color="#6B7280" />
+                  <TextInput
+                    className="flex-1 ml-3 text-black text-base"
+                    placeholder="Confirm"
+                    placeholderTextColor="#9CA3AF"
+                    value={signupData.confirmPassword}
+                    onChangeText={(value) =>
+                      handleInputChange("confirmPassword", value)
+                    }
+                    secureTextEntry={!showConfirmPassword}
+                    autoCapitalize="none"
+                    autoComplete="password-new"
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff size={20} color="#6B7280" />
+                    ) : (
+                      <Eye size={20} color="#6B7280" />
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+
+            {/* Gender and Date of Birth Row */}
+            <View className="flex-row mb-4" style={{ gap: 12 }}>
+              {/* Gender Dropdown */}
+              <View className="flex-1">
+                <TouchableOpacity
+                  className="flex-row items-center border border-gray-300 rounded-2xl px-4 py-4"
+                  onPress={() => setShowGenderDropdown(!showGenderDropdown)}
+                >
+                  <User size={20} color="#6B7280" />
+                  <Text className="flex-1 ml-3 text-black text-base">
+                    {signupData.gender || "Gender"}
+                  </Text>
+                  <ChevronDown size={20} color="#6B7280" />
+                </TouchableOpacity>
+
+                {showGenderDropdown && (
+                  <View className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-2xl z-10 shadow-lg">
+                    {["Male", "Female", "Other", "Prefer not to say"].map(
+                      (gender) => (
+                        <TouchableOpacity
+                          key={gender}
+                          className="px-4 py-3 border-b border-gray-200 last:border-b-0"
+                          onPress={() => {
+                            handleInputChange("gender", gender);
+                            setShowGenderDropdown(false);
+                          }}
+                        >
+                          <Text className="text-black text-base">{gender}</Text>
+                        </TouchableOpacity>
+                      )
+                    )}
                   </View>
-                  <Text className="text-black font-medium text-lg">{stat.value}</Text>
-                  <Text className="text-gray-500 text-xs">{stat.label}</Text>
-                </View>
-              );
-            })}
-          </View>
-        </View>
-
-        {/* Upcoming Appointments */}
-        <View className="px-6 mb-8">
-          <Text className="text-xl font-light text-black mb-4">Upcoming</Text>
-          {upcomingAppointments.map((appointment) => (
-            <TouchableOpacity key={appointment.id} className="bg-gray-50 rounded-2xl p-4 mb-3 border border-gray-200">
-              <View className="flex-row justify-between items-start mb-2">
-                <Text className="text-black font-medium text-base flex-1">{appointment.service}</Text>
-                <Text className="text-gray-500 text-sm">{appointment.time}</Text>
+                )}
               </View>
-              <Text className="text-gray-600 text-sm mb-2">with {appointment.professional}</Text>
-              <View className="flex-row items-center">
-                <Calendar size={14} color="#666" />
-                <Text className="text-gray-600 text-sm ml-2">{appointment.date}</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
 
-        {/* Menu Items */}
-        <View className="px-6 mb-8">
-          <Text className="text-xl font-light text-black mb-4">Settings</Text>
-          {menuItems.map((item, index) => (
-            <TouchableOpacity 
-              key={index}
-              className="flex-row items-center justify-between py-4 border-b border-gray-100"
-            >
-              <View className="flex-row items-center flex-1">
-                <View className="w-10 h-10 bg-gray-100 rounded-lg items-center justify-center mr-4">
-                  <item.icon size={20} color="#000" />
-                </View>
+              {/* Date of Birth */}
+              <View className="flex-1">
+                <TouchableOpacity
+                  className="flex-row items-center border border-gray-300 rounded-2xl px-4 py-4"
+                  onPress={() => setShowDatePicker(true)}
+                >
+                  <Calendar size={20} color="#6B7280" />
+                  <Text className="flex-1 ml-3 text-black text-base">
+                    {formatDate(signupData.dateOfBirth)}
+                  </Text>
+                </TouchableOpacity>
+
+                {showDatePicker && (
+                  <DateTimePicker
+                    value={signupData.dateOfBirth}
+                    mode="date"
+                    display="default"
+                    onChange={handleDateChange}
+                    maximumDate={new Date()}
+                  />
+                )}
+              </View>
+            </View>
+
+            {/* Location Section - Region, Country, and Button in same line */}
+            <View className="mb-6">
+              <View className="flex-row items-center justify-between mb-3">
+                <Text className="text-gray-600 text-base font-medium">
+                  Location
+                </Text>
+                <TouchableOpacity
+                  onPress={handleClearLocation}
+                  disabled={!signupData.region && !signupData.country}
+                >
+                  <Text className="text-red-500 font-medium text-sm">
+                    {signupData.region || signupData.country ? "Clear" : ""}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Region, Country, and Button ALL IN SAME LINE */}
+              <View className="flex-row items-center" style={{ gap: 12 }}>
+                {/* Region */}
                 <View className="flex-1">
-                  <Text className="text-black font-normal text-base">{item.title}</Text>
-                  <Text className="text-gray-500 text-sm mt-1">{item.subtitle}</Text>
+                  <Text className="text-gray-600 text-sm mb-1">Region</Text>
+                  <View className="flex-row items-center border border-gray-300 rounded-2xl px-4 py-4">
+                    <MapPin size={16} color="#6B7280" />
+                    <TextInput
+                      className="flex-1 ml-2 text-black text-base"
+                      placeholder="Region"
+                      placeholderTextColor="#9CA3AF"
+                      value={signupData.region}
+                      onChangeText={(value) =>
+                        handleInputChange("region", value)
+                      }
+                    />
+                  </View>
+                </View>
+
+                {/* Country */}
+                <View className="flex-1">
+                  <Text className="text-gray-600 text-sm mb-1">Country</Text>
+                  <View className="flex-row items-center border border-gray-300 rounded-2xl px-4 py-4">
+                    <MapPin size={16} color="#6B7280" />
+                    <TextInput
+                      className="flex-1 ml-2 text-black text-base"
+                      placeholder="Country"
+                      placeholderTextColor="#9CA3AF"
+                      value={signupData.country}
+                      onChangeText={(value) =>
+                        handleInputChange("country", value)
+                      }
+                    />
+                  </View>
+                </View>
+
+                {/* Get Location Button */}
+                <View>
+                  <Text className="text-gray-600 text-sm mb-1 opacity-0">
+                    Button
+                  </Text>
+                  <TouchableOpacity
+                    className="flex-row items-center justify-center border-2 border-black rounded-xl px-3 py-3"
+                    onPress={handleGetLocation}
+                    disabled={isGettingLocation}
+                    style={{ minWidth: 80 }}
+                  >
+                    <MapPin size={16} color="#000" />
+                    <Text className="ml-1 text-black font-semibold text-sm">
+                      {isGettingLocation ? "..." : "Get"}
+                    </Text>
+                  </TouchableOpacity>
                 </View>
               </View>
-              
-              {item.switch ? (
-                <Switch
-                  value={item.value}
-                  onValueChange={item.onChange}
-                  trackColor={{ false: '#f1f5f9', true: '#000' }}
-                  thumbColor={item.value ? '#fff' : '#f4f4f5'}
-                />
+
+              {/* Location Status Display */}
+              {signupData.latitude !== null && signupData.longitude !== null ? (
+                <View className="mt-3 p-3 bg-green-50 border border-green-200 rounded-xl">
+                  <Text className="text-green-800 text-sm text-center">
+                    ✓ Location coordinates saved
+                  </Text>
+                </View>
               ) : (
-                <ChevronRight size={20} color="#9CA3AF" />
+                <View className="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-xl">
+                  <Text className="text-gray-600 text-sm text-center">
+                    Tap "Get" to automatically detect your location
+                  </Text>
+                </View>
               )}
+            </View>
+
+            {/* Signup Button */}
+            <TouchableOpacity
+              className={`py-4 rounded-2xl items-center shadow-lg mb-6 ${
+                isLoading ? "bg-gray-400" : "bg-black"
+              }`}
+              onPress={handleSignup}
+              disabled={isLoading}
+            >
+              <Text className="text-white font-semibold text-lg">
+                {isLoading ? "Creating Account..." : "Create Account"}
+              </Text>
             </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Contact Info */}
-        <View className="px-6 mb-8">
-          <Text className="text-xl font-light text-black mb-4">Contact</Text>
-          <View className="bg-gray-50 rounded-2xl p-4 border border-gray-200">
-            <View className="flex-row items-center mb-3">
-              <Phone size={18} color="#666" />
-              <Text className="text-gray-600 text-base ml-3">{userData.phone}</Text>
-            </View>
-            <View className="flex-row items-center">
-              <Mail size={18} color="#666" />
-              <Text className="text-gray-600 text-base ml-3">{userData.email}</Text>
-            </View>
           </View>
-        </View>
 
-        {/* Sign Out */}
-        <TouchableOpacity className="flex-row items-center justify-center py-4 mx-6 mb-8 border border-gray-200 rounded-2xl">
-          <LogOut size={20} color="#666" />
-          <Text className="text-gray-600 text-base font-normal ml-2">Sign Out</Text>
-        </TouchableOpacity>
+          {/* Social Signup Divider */}
+          <View className="flex-row items-center mb-6">
+            <View className="flex-1 h-0.5 bg-gray-300" />
+            <Text className="mx-4 text-gray-500 font-medium">
+              Or sign up with
+            </Text>
+            <View className="flex-1 h-0.5 bg-gray-300" />
+          </View>
 
-        {/* App Version */}
-        <View className="items-center pb-8">
-          <Text className="text-gray-400 text-sm">Saha v0.0.1</Text>
+          {/* Social Signup Buttons */}
+          <View className="flex-row justify-center space-x-3 mb-8">
+            {/* Google Signup */}
+            <TouchableOpacity
+              className="w-10 h-10 border border-gray-300 rounded-xl items-center justify-center"
+              onPress={() => handleSocialSignup("Google")}
+            >
+              <Icon name="google" size={18} color="#DB4437" />
+            </TouchableOpacity>
+
+            {/* Facebook Signup */}
+            <TouchableOpacity
+              className="w-10 h-10 border border-gray-300 rounded-xl items-center justify-center"
+              onPress={() => handleSocialSignup("Facebook")}
+            >
+              <Icon name="facebook" size={18} color="#1877F2" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Login Link */}
+          <View className="flex-row justify-center mb-6">
+            <Text className="text-gray-600">Already have an account? </Text>
+            <TouchableOpacity onPress={handleLogin}>
+              <Text className="text-black font-semibold">Log In</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
-
-      {/* Edit Button */}
-      <TouchableOpacity className="absolute bottom-6 right-6 bg-black rounded-full p-4 shadow-lg">
-        <Edit3 size={20} color="#fff" />
-      </TouchableOpacity>
     </SafeAreaView>
   );
 };
 
-export default ProfileScreen;
+export default Signup;
