@@ -37,6 +37,7 @@ interface User {
   favorites: string[];
   bookings?: any[];
   reviews?: any[];
+  createdAt?: string;
 }
 
 interface AuthContextType {
@@ -49,6 +50,8 @@ interface AuthContextType {
   ) => Promise<void>;
   logout: () => Promise<void>;
   loading: boolean;
+  refreshUser: () => Promise<void>;
+  setUser: (user: User) => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType>({
@@ -57,6 +60,8 @@ export const AuthContext = createContext<AuthContextType>({
   login: async () => {},
   logout: async () => {},
   loading: true,
+  refreshUser: async () => {}, // Add this
+  setUser: async () => {}, // Add this
 });
 
 interface Props {
@@ -116,7 +121,24 @@ export const AuthProvider: React.FC<Props> = ({ children }) => {
 
     checkToken();
   }, []);
+  const refreshUser = async () => {
+    try {
+      const storedUser = await getCurrentUser();
+      if (storedUser) {
+        setCurrentUser(storedUser);
+        return storedUser;
+      }
+      return null;
+    } catch (error) {
+      console.error("Error refreshing user:", error);
+      return null;
+    }
+  };
 
+  const setUser = async (user: User) => {
+    await saveCurrentUser(user);
+    setCurrentUser(user);
+  };
   const login = async (
     accessToken: string,
     refreshToken: string,
@@ -139,7 +161,15 @@ export const AuthProvider: React.FC<Props> = ({ children }) => {
 
   return (
     <AuthContext.Provider
-      value={{ userToken, currentUser, login, logout, loading }}
+      value={{
+        userToken,
+        currentUser,
+        login,
+        logout,
+        loading,
+        refreshUser,
+        setUser,
+      }}
     >
       {children}
     </AuthContext.Provider>

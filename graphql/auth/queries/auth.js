@@ -24,6 +24,7 @@ export const GET_CURRENT_CLIENT = gql`
         date
         service
       }
+      createdAt
       reviews {
         _id
         rating

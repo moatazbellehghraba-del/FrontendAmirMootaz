@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from "react";
-import * as Location from "expo-location";
+
 import {
   View,
   Text,
@@ -36,40 +36,6 @@ const ProfileScreen = () => {
   if (!currentUser) {
     return <Text>Loading....</Text>;
   }
-  const [adress, setAddress] = useState("");
-  useEffect(() => {
-    const fetchAddress = async () => {
-      try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-
-        if (status !== "granted") {
-          Alert.alert(
-            "Permission Required",
-            "Please enable location access in settings."
-          );
-          return;
-        }
-        if (!currentUser?.location) return;
-        // call reverse geocoding using your saved lat/long
-        const result = await Location.reverseGeocodeAsync({
-          latitude: currentUser.location.lat,
-          longitude: currentUser.location.long,
-        });
-
-        if (result && result.length > 0) {
-          const r = result[0];
-          console.log("value of adresss", r);
-          // Format nice address (city + country)
-          const addressString = `${r.city || r.region}, ${r.country}`;
-          setAddress(addressString);
-        }
-      } catch (error) {
-        console.log("Address error:", error);
-      }
-    };
-
-    fetchAddress();
-  }, [currentUser]);
 
   const router = useRouter();
   const [notifications, setNotifications] = useState(true);
@@ -80,22 +46,16 @@ const ProfileScreen = () => {
 
     router.replace("/(auth)/Login"); // Redirect
   };
-  const userData = {
-    name: "Amira Ben Ahmed",
-    firstName: "Amira",
-    lastName: "Ben Ahmed",
-    email: "amira.benahmed@email.com",
-    phone: "+216 12 345 678",
-    location: "Tunis, Tunisia",
-    birthDate: "15 March 1990",
-    gender: "Female",
-    memberSince: "Jan 2023",
-  };
 
   const stats = [
     { value: "24", label: "Completed", icon: Calendar, color: "#000" },
     { value: "2", label: "Upcoming", icon: Clock, color: "#000" },
-    { value: "1,250", label: "Loyalty Points", icon: Star, color: "#000" },
+    {
+      value: currentUser ? `${currentUser.loyaltyPoints}` : "6",
+      label: "Loyalty Points",
+      icon: Star,
+      color: "#000",
+    },
   ];
 
   const upcomingAppointments = [
@@ -125,7 +85,6 @@ const ProfileScreen = () => {
       onPress: () =>
         router.push({
           pathname: "/Components/PersonalInfo",
-          params: { userData: JSON.stringify(userData) },
         }),
     },
 
@@ -301,7 +260,9 @@ const ProfileScreen = () => {
             </Text>
             <View className="flex-row items-center">
               <MapPin size={14} color="#666" />
-              <Text className="text-gray-600 text-sm ml-2">{adress}</Text>
+              <Text className="text-gray-600 text-sm ml-2">
+                {currentUser.region} , {currentUser.country}
+              </Text>
             </View>
           </View>
 
