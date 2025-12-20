@@ -1,5 +1,9 @@
 import { AuthContext } from "@/context/AuthContext";
-import { VERIFY_EMAIL } from "@/graphql/auth/mutations/auth";
+import {
+  RESEND_VerifyEmail,
+  VERIFY_EMAIL,
+  VerifyUdatedEmail,
+} from "@/graphql/auth/mutations/auth";
 import { useMutation } from "@apollo/client/react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft, Clock, Mail, Phone } from "lucide-react-native";
@@ -19,10 +23,21 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { GET_CURRENT_CLIENT } from "../../graphql/auth/queries/auth";
 import { client } from "@/apollo/client";
 // Interface for verify email response - FIXED
+interface VerficationEmailOfclientResponse {
+  verifyUpdatedEmail: {
+    success: string;
+    message: string;
+  };
+}
 interface VerifyEmailResponse {
   verifyEmail: {
     accessToken: string;
     refreshToken: string;
+  };
+}
+interface ResendEmailResponse {
+  resendVerifyEmail: {
+    message: string;
   };
 }
 interface CurrentClientResponse {
@@ -53,6 +68,7 @@ const Verification = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
   const email = (params.email as string) || "";
+  const operation = (params.operation as string) || "signup";
 
   const [code, setCode] = useState<string[]>(["", "", "", "", "", ""]);
   const [isLoading, setIsLoading] = useState(false);
@@ -116,10 +132,16 @@ const Verification = () => {
     }
   };
   // FIXED: Use VerifyEmailResponse interface instead of RegisterResponse
+  const [resendVerifyEmail] =
+    useMutation<VerifyEmailResponse>(RESEND_VerifyEmail);
   const [verifyEmail, { loading }] =
     useMutation<VerifyEmailResponse>(VERIFY_EMAIL);
+  // now verify For the email update
+  const [verifyUpdatedEmail] =
+    useMutation<VerficationEmailOfclientResponse>(VerifyUdatedEmail);
   // Verify the code
   const { login: authLogin } = useContext(AuthContext);
+  const { logout } = useContext(AuthContext);
   const verifyCode = async (verificationCode: string) => {
     if (verificationCode.length !== 6) {
       Alert.alert("Error", "Please enter the 6-digit verification code");
@@ -135,38 +157,54 @@ const Verification = () => {
 
       // Simulate API call
       // FIXED: Pass variables correctly - NOT wrapped in "input" object
-      const res = await verifyEmail({
-        variables: {
-          email: email,
-          code: verificationCode, // Use the string verificationCode, not the array
-        },
-      });
-      // FIXED: Access verifyEmail, not register
-      const tokens = res.data?.verifyEmail;
-      if (!tokens) {
-        Alert.alert("Error", "No Tokens returned from server");
-        return;
-      }
-      // Save Tokens securely
-      await SecureStore.setItemAsync("accessToken", tokens.accessToken);
-      await SecureStore.setItemAsync("refreshToken", tokens.refreshToken);
-      const { data } = await client.query<CurrentClientResponse>({
-        query: GET_CURRENT_CLIENT,
-        fetchPolicy: "network-only",
-      });
-      console.log("value of data", data);
-      if (data?.me) {
-        await SecureStore.setItemAsync("currentUser", JSON.stringify(data.me));
-      }
-      Alert.alert("Success", "Account created successfully!");
-      if (!data || !data.me) {
-        Alert.alert("Error", "Failed to load user profile");
-        return;
-      }
+      if (operation === "signup") {
+        const res = await verifyEmail({
+          variables: {
+            email: email,
+            code: verificationCode, // Use the string verificationCode, not the array
+          },
+        });
+        // FIXED: Access verifyEmail, not register
+        const tokens = res.data?.verifyEmail;
+        if (!tokens) {
+          Alert.alert("Error", "No Tokens returned from server");
+          return;
+        }
+        // Save Tokens securely
+        await SecureStore.setItemAsync("accessToken", tokens.accessToken);
+        await SecureStore.setItemAsync("refreshToken", tokens.refreshToken);
+        const { data } = await client.query<CurrentClientResponse>({
+          query: GET_CURRENT_CLIENT,
+          fetchPolicy: "network-only",
+        });
+        console.log("value of data", data);
+        if (data?.me) {
+          await SecureStore.setItemAsync(
+            "currentUser",
+            JSON.stringify(data.me)
+          );
+        }
+        Alert.alert("Success", "Account created successfully!");
+        if (!data || !data.me) {
+          Alert.alert("Error", "Failed to load user profile");
+          return;
+        }
 
-      // For demo purposes, accept any code starting with '1
-      await authLogin(tokens.accessToken, tokens.refreshToken, data.me);
-      router.push("/(tabs)/Home");
+        // For demo purposes, accept any code starting with '1
+        await authLogin(tokens.accessToken, tokens.refreshToken, data.me);
+        router.push("/(tabs)/Home");
+      } else if (operation === "update-email") {
+        const res = await verifyUpdatedEmail({
+          variables: {
+            email: email,
+            code: verificationCode, // Use the string verificationCode , not the array
+          },
+        });
+        await logout();
+        router.dismissAll();
+        router.replace("/(auth)/Login");
+        console.log(res);
+      }
     } catch (error: any) {
       console.log("Verification error:", error);
       Alert.alert("Error", "Verification failed. Please try again.");
@@ -187,11 +225,11 @@ const Verification = () => {
       // TODO: Implement actual resend code API call
       console.log("Resending verification code to:", email);
 
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const res = await resendVerifyEmail({ variables: { email: email } });
 
       Alert.alert(
         "Code Sent",
-        "A new verification code has been sent to your email/phone."
+        "A new verification code has been sent to your email"
       );
 
       // Reset timer
@@ -239,7 +277,7 @@ const Verification = () => {
           {/* Header */}
           <View className="items-center mb-10">
             <Text className="text-3xl font-black text-black mb-3">
-              Verify Your Account
+              Verify Your {operation === "signup" ? "Account" : "Email"}
             </Text>
             <Text className="text-lg text-gray-600 text-center mb-6">
               Enter the 6-digit code sent to your email or phone
@@ -301,7 +339,11 @@ const Verification = () => {
               disabled={isLoading || code.join("").length !== 6}
             >
               <Text className="text-white font-semibold text-lg">
-                {isLoading ? "Verifying..." : "Verify Account"}
+                {isLoading
+                  ? "Verifying..."
+                  : operation === "signup"
+                  ? "Verify Account"
+                  : "Verify Email"}
               </Text>
             </TouchableOpacity>
           </View>
@@ -330,20 +372,6 @@ const Verification = () => {
                 </Text>
               </View>
             </TouchableOpacity>
-          </View>
-
-          {/* Demo Information */}
-          <View className="mt-10 p-4 bg-yellow-50 border border-yellow-200 rounded-2xl">
-            <Text className="text-yellow-800 font-medium mb-2">
-              Demo Information:
-            </Text>
-            <Text className="text-yellow-700 text-sm">
-              For testing purposes, use code:{" "}
-              <Text className="font-bold">123456</Text>
-            </Text>
-            <Text className="text-yellow-700 text-sm mt-1">
-              After verification, you'll be redirected to the Home screen.
-            </Text>
           </View>
         </View>
       </ScrollView>

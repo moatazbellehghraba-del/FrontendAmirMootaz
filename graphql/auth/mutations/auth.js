@@ -16,6 +16,61 @@ export const VERIFY_EMAIL = gql`
     }
   }
 `;
+export const UpdateClientEmail = gql`
+  mutation UpdateClientEmail($ClientId: String!, $email: String!) {
+    updateClientEmail(ClientId: $ClientId, email: $email) {
+      success
+      message
+    }
+  }
+`;
+export const VerifyUdatedEmail = gql`
+  mutation VerifyUpdatedEmail($email: String!, $code: String!) {
+    verifyUpdatedEmail(email: $email, code: $code) {
+      success
+      message
+    }
+  }
+`;
+export const UpdateClientData = gql`
+  mutation UpdateClient($input: UpdateClientInput!) {
+    updateClient(updateClientInput: $input) {
+      firstName
+      lastName
+      phoneNumber
+      email
+      gender
+      dateOfBirth
+      profilePhoto
+      location {
+        lat
+        long
+      }
+      region
+      country
+      loyaltyPoints
+      favorites
+      bookings {
+        _id
+        date
+        service
+      }
+      createdAt
+      reviews {
+        _id
+        rating
+        comment
+      }
+    }
+  }
+`;
+export const RESEND_VerifyEmail = gql`
+  mutation ResendVerifyEmail($email: String!) {
+    resendVerifyEmail(email: $email) {
+      message
+    }
+  }
+`;
 export const REGISTER = gql`
   mutation Register($input: CreateClientInput!) {
     register(input: $input) {

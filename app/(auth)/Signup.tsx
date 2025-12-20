@@ -63,6 +63,7 @@ interface CurrentClientResponse {
     favorites: string[];
     bookings?: any[];
     reviews?: any[];
+    createdAt?: string;
   };
 }
 interface SignupData {
@@ -276,7 +277,7 @@ const Signup = () => {
 
       router.push({
         pathname: "/(auth)/Verification",
-        params: { email: signupData.email },
+        params: { email: signupData.email, operation: "signup" },
       });
     } catch (error: any) {
       console.log("GraphQL Error:", JSON.stringify(error, null, 2));

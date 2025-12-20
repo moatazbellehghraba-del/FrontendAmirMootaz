@@ -1,9 +1,17 @@
 // app/privacy-security.tsx
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Switch, Alert, TextInput } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { 
+import React, { useContext, useState } from "react";
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  Switch,
+  Alert,
+  TextInput,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
+import {
   ChevronLeft,
   Shield,
   Lock,
@@ -17,125 +25,155 @@ import {
   Save,
   Mail,
   Key,
-  EyeOff
-} from 'lucide-react-native';
+  EyeOff,
+} from "lucide-react-native";
+import { useMutation } from "@apollo/client/react";
+import {
+  UpdateClientData,
+  UpdateClientEmail,
+} from "@/graphql/auth/mutations/auth";
+import { AuthContext } from "@/context/AuthContext";
+interface VerficationEmailOfclientResponse {
+  verifyUpdatedEmail: {
+    success: string;
+    message: string;
+  };
+}
+interface CurrentUpadatePassword {
+  firstName: string;
+
+  email: string;
+}
 
 const PrivacySecurityScreen = () => {
   const router = useRouter();
-  
+  const { currentUser } = useContext(AuthContext);
+
   const [privacySettings, setPrivacySettings] = useState({
-    profileVisibility: 'public',
+    profileVisibility: "public",
     showOnlineStatus: true,
     readReceipts: true,
     twoFactorAuth: false,
     dataSharing: false,
     marketingEmails: false,
-    locationServices: true
+    locationServices: true,
   });
 
   const [securitySettings, setSecuritySettings] = useState({
     biometricLogin: true,
-    autoLock: 'immediate',
-    sessionTimeout: '30min'
+    autoLock: "immediate",
+    sessionTimeout: "30min",
   });
 
   // Password change states
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [passwordData, setPasswordData] = useState({
-    currentPassword: '123456',
-    newPassword: '',
-    confirmPassword: ''
+    newPassword: "",
+    confirmPassword: "",
   });
   const [showPasswords, setShowPasswords] = useState({
     current: false,
     new: false,
-    confirm: false
+    confirm: false,
   });
 
   // Email change states
   const [showChangeEmail, setShowChangeEmail] = useState(false);
   const [emailData, setEmailData] = useState({
-    currentEmail: 'amira.benahmed@email.com',
-    newEmail: '',
-    confirmEmail: '',
-    password: ''
+    currentEmail: currentUser?.email ?? "",
+    newEmail: "",
+    confirmEmail: "",
   });
   const [showEmailPassword, setShowEmailPassword] = useState(false);
 
   const handleSave = () => {
-    Alert.alert('Success', 'Your privacy settings have been updated!');
+    Alert.alert("Success", "Your privacy settings have been updated!");
   };
 
   const handleExportData = () => {
-    Alert.alert('Export Data', 'Your data export will be prepared and sent to your email.');
+    Alert.alert(
+      "Export Data",
+      "Your data export will be prepared and sent to your email."
+    );
   };
 
   const handleDeleteAccount = () => {
     Alert.alert(
-      'Delete Account',
-      'Are you sure you want to delete your account? This action cannot be undone.',
+      "Delete Account",
+      "Are you sure you want to delete your account? This action cannot be undone.",
       [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Delete', 
-          style: 'destructive',
-          onPress: () => console.log('Account deletion initiated')
-        }
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => console.log("Account deletion initiated"),
+        },
       ]
     );
   };
-
-  const handleChangePassword = () => {
+  const [updateClient] = useMutation<CurrentUpadatePassword>(UpdateClientData);
+  const handleChangePassword = async () => {
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      Alert.alert('Error', 'New passwords do not match.');
+      Alert.alert("Error", "New passwords do not match.");
       return;
     }
 
     if (passwordData.newPassword.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters long.');
+      Alert.alert("Error", "Password must be at least 6 characters long.");
       return;
     }
 
-    // Simulate API call
-    Alert.alert('Success', 'Your password has been updated successfully!');
+    //  API call
+    const res = await updateClient({
+      variables: { input: { password: passwordData.newPassword } },
+    });
+    Alert.alert("Password changed");
     setShowChangePassword(false);
     setPasswordData({
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: ''
+      newPassword: "",
+      confirmPassword: "",
     });
   };
-
-  const handleChangeEmail = () => {
+  const [updateClientEmail] =
+    useMutation<VerficationEmailOfclientResponse>(UpdateClientEmail);
+  const handleChangeEmail = async () => {
     if (emailData.newEmail !== emailData.confirmEmail) {
-      Alert.alert('Error', 'Email addresses do not match.');
+      Alert.alert("Error", "Email addresses do not match.");
       return;
     }
 
-    if (!emailData.newEmail.includes('@')) {
-      Alert.alert('Error', 'Please enter a valid email address.');
+    if (!emailData.newEmail.includes("@")) {
+      Alert.alert("Error", "Please enter a valid email address.");
       return;
     }
 
-    // Simulate API call
-    Alert.alert('Success', 'Your email has been updated successfully!');
+    const res = await updateClientEmail({
+      variables: {
+        ClientId: currentUser?._id,
+        email: emailData.newEmail,
+      },
+    });
+    console.log("this the reponse of update email of the client ", res);
+    router.push({
+      pathname: "/(auth)/Verification",
+      params: { email: emailData.newEmail, operation: "update-email" },
+    });
     setShowChangeEmail(false);
-    setEmailData(prev => ({
+    setEmailData((prev) => ({
       ...prev,
-      newEmail: '',
-      confirmEmail: '',
-      password: ''
+      newEmail: "",
+      confirmEmail: "",
     }));
   };
 
-  const PasswordField = ({ 
-    label, 
-    value, 
-    onChangeText, 
+  const PasswordField = ({
+    label,
+    value,
+    onChangeText,
     placeholder,
     showPassword,
     onToggleVisibility,
-    fieldKey 
+    fieldKey,
   }: {
     label: string;
     value: string;
@@ -157,7 +195,7 @@ const PrivacySecurityScreen = () => {
           secureTextEntry={!showPassword}
           autoCapitalize="none"
         />
-        <TouchableOpacity 
+        <TouchableOpacity
           className="absolute right-4 top-4"
           onPress={onToggleVisibility}
         >
@@ -171,20 +209,20 @@ const PrivacySecurityScreen = () => {
     </View>
   );
 
-  const EmailField = ({ 
-    label, 
-    value, 
-    onChangeText, 
+  const EmailField = ({
+    label,
+    value,
+    onChangeText,
     placeholder,
     editable = true,
-    keyboardType = 'default'
+    keyboardType = "default",
   }: {
     label: string;
     value: string;
     onChangeText: (text: string) => void;
     placeholder: string;
     editable?: boolean;
-    keyboardType?: 'default' | 'email-address';
+    keyboardType?: "default" | "email-address";
   }) => (
     <View className="mb-4">
       <Text className="text-gray-600 text-sm font-medium mb-2">{label}</Text>
@@ -201,7 +239,13 @@ const PrivacySecurityScreen = () => {
     </View>
   );
 
-  const SettingSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
+  const SettingSection = ({
+    title,
+    children,
+  }: {
+    title: string;
+    children: React.ReactNode;
+  }) => (
     <View className="mb-8">
       <Text className="text-xl font-light text-black mb-5">{title}</Text>
       <View className="bg-gray-50 rounded-3xl p-2 border border-gray-200">
@@ -210,12 +254,12 @@ const PrivacySecurityScreen = () => {
     </View>
   );
 
-  const SwitchSetting = ({ 
-    icon: Icon, 
-    title, 
-    subtitle, 
-    value, 
-    onValueChange 
+  const SwitchSetting = ({
+    icon: Icon,
+    title,
+    subtitle,
+    value,
+    onValueChange,
   }: {
     icon: React.ComponentType<{ size: number; color: string }>;
     title: string;
@@ -236,19 +280,19 @@ const PrivacySecurityScreen = () => {
       <Switch
         value={value}
         onValueChange={onValueChange}
-        trackColor={{ false: '#e5e5e5', true: '#000' }}
-        thumbColor={value ? '#fff' : '#f4f4f5'}
+        trackColor={{ false: "#e5e5e5", true: "#000" }}
+        thumbColor={value ? "#fff" : "#f4f4f5"}
       />
     </View>
   );
 
-  const RadioSetting = ({ 
-    icon: Icon, 
-    title, 
-    subtitle, 
-    value, 
+  const RadioSetting = ({
+    icon: Icon,
+    title,
+    subtitle,
+    value,
     currentValue,
-    onPress 
+    onPress,
   }: {
     icon: React.ComponentType<{ size: number; color: string }>;
     title: string;
@@ -257,7 +301,7 @@ const PrivacySecurityScreen = () => {
     currentValue: string;
     onPress: (value: string) => void;
   }) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       className="flex-row items-center justify-between py-4 px-2 active:bg-gray-100 rounded-xl"
       onPress={() => onPress(value)}
     >
@@ -270,9 +314,11 @@ const PrivacySecurityScreen = () => {
           <Text className="text-gray-500 text-sm mt-1">{subtitle}</Text>
         </View>
       </View>
-      <View className={`w-6 h-6 rounded-full border-2 ${
-        currentValue === value ? 'bg-black border-black' : 'border-gray-300'
-      }`}>
+      <View
+        className={`w-6 h-6 rounded-full border-2 ${
+          currentValue === value ? "bg-black border-black" : "border-gray-300"
+        }`}
+      >
         {currentValue === value && (
           <View className="w-2 h-2 bg-white rounded-full m-auto" />
         )}
@@ -280,12 +326,12 @@ const PrivacySecurityScreen = () => {
     </TouchableOpacity>
   );
 
-  const ActionButton = ({ 
-    icon: Icon, 
-    title, 
-    subtitle, 
-    color = 'text-black',
-    onPress 
+  const ActionButton = ({
+    icon: Icon,
+    title,
+    subtitle,
+    color = "text-black",
+    onPress,
   }: {
     icon: React.ComponentType<{ size: number; color: string }>;
     title: string;
@@ -293,12 +339,12 @@ const PrivacySecurityScreen = () => {
     color?: string;
     onPress: () => void;
   }) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       className="flex-row items-center py-4 px-2 active:bg-gray-100 rounded-xl"
       onPress={onPress}
     >
       <View className="w-12 h-12 bg-gray-50 rounded-xl items-center justify-center mr-4 border border-gray-100">
-        <Icon size={20} color={color.includes('red') ? '#dc2626' : '#000'} />
+        <Icon size={20} color={color.includes("red") ? "#dc2626" : "#000"} />
       </View>
       <View className="flex-1">
         <Text className={`font-medium text-base ${color}`}>{title}</Text>
@@ -311,23 +357,26 @@ const PrivacySecurityScreen = () => {
   return (
     <SafeAreaView className="flex-1 bg-white">
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        
         {/* Header */}
         <View className="px-6 pt-12 pb-6 bg-white">
           <View className="flex-row items-center justify-between mb-8">
             <View className="flex-row items-center">
-              <TouchableOpacity 
+              <TouchableOpacity
                 className="w-12 h-12 bg-gray-50 rounded-2xl items-center justify-center mr-4 border border-gray-200"
                 onPress={() => router.back()}
               >
                 <ChevronLeft size={22} color="#000" />
               </TouchableOpacity>
               <View>
-                <Text className="text-3xl font-light text-black mb-1">Privacy & Security</Text>
-                <Text className="text-gray-400 text-base">Control your privacy settings</Text>
+                <Text className="text-3xl font-light text-black mb-1">
+                  Privacy & Security
+                </Text>
+                <Text className="text-gray-400 text-base">
+                  Control your privacy settings
+                </Text>
               </View>
             </View>
-            <TouchableOpacity 
+            <TouchableOpacity
               className="w-12 h-12 bg-black rounded-2xl items-center justify-center"
               onPress={handleSave}
             >
@@ -352,15 +401,19 @@ const PrivacySecurityScreen = () => {
               subtitle="Update your email address"
               onPress={() => setShowChangeEmail(true)}
             />
-            
-            
+
             <View className="border-b border-gray-200 mx-4" />
             <SwitchSetting
               icon={Lock}
               title="Biometric Login"
               subtitle="Use fingerprint or face ID to log in"
               value={securitySettings.biometricLogin}
-              onValueChange={(value) => setSecuritySettings(prev => ({ ...prev, biometricLogin: value }))}
+              onValueChange={(value) =>
+                setSecuritySettings((prev) => ({
+                  ...prev,
+                  biometricLogin: value,
+                }))
+              }
             />
           </SettingSection>
 
@@ -368,47 +421,55 @@ const PrivacySecurityScreen = () => {
           {showChangePassword && (
             <View className="mb-8 bg-white rounded-3xl p-6 border border-gray-200">
               <View className="flex-row items-center justify-between mb-6">
-                <Text className="text-xl font-light text-black">Change Password</Text>
+                <Text className="text-xl font-light text-black">
+                  Change Password
+                </Text>
                 <TouchableOpacity onPress={() => setShowChangePassword(false)}>
                   <Text className="text-gray-500 text-base">Cancel</Text>
                 </TouchableOpacity>
               </View>
-              
-              <PasswordField
-                label="Current Password"
-                value={passwordData.currentPassword}
-                onChangeText={(text) => setPasswordData(prev => ({ ...prev, currentPassword: text }))}
-                placeholder="Enter current password"
-                showPassword={showPasswords.current}
-                onToggleVisibility={() => setShowPasswords(prev => ({ ...prev, current: !prev.current }))}
-                fieldKey="current"
-              />
-              
+
               <PasswordField
                 label="New Password"
                 value={passwordData.newPassword}
-                onChangeText={(text) => setPasswordData(prev => ({ ...prev, newPassword: text }))}
+                onChangeText={(text) =>
+                  setPasswordData((prev) => ({ ...prev, newPassword: text }))
+                }
                 placeholder="Enter new password"
                 showPassword={showPasswords.new}
-                onToggleVisibility={() => setShowPasswords(prev => ({ ...prev, new: !prev.new }))}
+                onToggleVisibility={() =>
+                  setShowPasswords((prev) => ({ ...prev, new: !prev.new }))
+                }
                 fieldKey="new"
               />
-              
+
               <PasswordField
                 label="Confirm New Password"
                 value={passwordData.confirmPassword}
-                onChangeText={(text) => setPasswordData(prev => ({ ...prev, confirmPassword: text }))}
+                onChangeText={(text) =>
+                  setPasswordData((prev) => ({
+                    ...prev,
+                    confirmPassword: text,
+                  }))
+                }
                 placeholder="Confirm new password"
                 showPassword={showPasswords.confirm}
-                onToggleVisibility={() => setShowPasswords(prev => ({ ...prev, confirm: !prev.confirm }))}
+                onToggleVisibility={() =>
+                  setShowPasswords((prev) => ({
+                    ...prev,
+                    confirm: !prev.confirm,
+                  }))
+                }
                 fieldKey="confirm"
               />
 
-              <TouchableOpacity 
+              <TouchableOpacity
                 className="bg-black rounded-2xl py-4 items-center mt-4"
                 onPress={handleChangePassword}
               >
-                <Text className="text-white font-medium text-base">Update Password</Text>
+                <Text className="text-white font-medium text-base">
+                  Update Password
+                </Text>
               </TouchableOpacity>
             </View>
           )}
@@ -417,12 +478,14 @@ const PrivacySecurityScreen = () => {
           {showChangeEmail && (
             <View className="mb-8 bg-white rounded-3xl p-6 border border-gray-200">
               <View className="flex-row items-center justify-between mb-6">
-                <Text className="text-xl font-light text-black">Change Email Address</Text>
+                <Text className="text-xl font-light text-black">
+                  Change Email Address
+                </Text>
                 <TouchableOpacity onPress={() => setShowChangeEmail(false)}>
                   <Text className="text-gray-500 text-base">Cancel</Text>
                 </TouchableOpacity>
               </View>
-              
+
               <EmailField
                 label="Current Email"
                 value={emailData.currentEmail}
@@ -430,59 +493,37 @@ const PrivacySecurityScreen = () => {
                 placeholder="Current email"
                 editable={false}
               />
-              
+
               <EmailField
                 label="New Email"
                 value={emailData.newEmail}
-                onChangeText={(text) => setEmailData(prev => ({ ...prev, newEmail: text }))}
+                onChangeText={(text) =>
+                  setEmailData((prev) => ({ ...prev, newEmail: text }))
+                }
                 placeholder="Enter new email address"
                 keyboardType="email-address"
               />
-              
+
               <EmailField
                 label="Confirm New Email"
                 value={emailData.confirmEmail}
-                onChangeText={(text) => setEmailData(prev => ({ ...prev, confirmEmail: text }))}
+                onChangeText={(text) =>
+                  setEmailData((prev) => ({ ...prev, confirmEmail: text }))
+                }
                 placeholder="Confirm new email address"
                 keyboardType="email-address"
               />
 
-              <View className="mb-4">
-                <Text className="text-gray-600 text-sm font-medium mb-2">Current Password</Text>
-                <View className="relative">
-                  <TextInput
-                    className="bg-white border border-gray-300 rounded-2xl px-4 py-4 text-base text-black"
-                    value={emailData.password}
-                    onChangeText={(text) => setEmailData(prev => ({ ...prev, password: text }))}
-                    placeholder="Enter your password to confirm"
-                    placeholderTextColor="#9CA3AF"
-                    secureTextEntry={!showEmailPassword}
-                    autoCapitalize="none"
-                  />
-                  <TouchableOpacity 
-                    className="absolute right-4 top-4"
-                    onPress={() => setShowEmailPassword(!showEmailPassword)}
-                  >
-                    {showEmailPassword ? (
-                      <Eye size={20} color="#666" />
-                    ) : (
-                      <EyeOff size={20} color="#666" />
-                    )}
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              <TouchableOpacity 
+              <TouchableOpacity
                 className="bg-black rounded-2xl py-4 items-center mt-4"
                 onPress={handleChangeEmail}
               >
-                <Text className="text-white font-medium text-base">Update Email</Text>
+                <Text className="text-white font-medium text-base">
+                  Update Email
+                </Text>
               </TouchableOpacity>
             </View>
           )}
-
-          
-          
 
           <SettingSection title="Communication">
             <SwitchSetting
@@ -490,21 +531,27 @@ const PrivacySecurityScreen = () => {
               title="Read Receipts"
               subtitle="Let others see when you've read their messages"
               value={privacySettings.readReceipts}
-              onValueChange={(value) => setPrivacySettings(prev => ({ ...prev, readReceipts: value }))}
+              onValueChange={(value) =>
+                setPrivacySettings((prev) => ({ ...prev, readReceipts: value }))
+              }
             />
-            
+
             <View className="border-b border-gray-200 mx-4" />
             <SwitchSetting
               icon={Smartphone}
               title="Marketing Emails"
               subtitle="Receive updates and promotions"
               value={privacySettings.marketingEmails}
-              onValueChange={(value) => setPrivacySettings(prev => ({ ...prev, marketingEmails: value }))}
+              onValueChange={(value) =>
+                setPrivacySettings((prev) => ({
+                  ...prev,
+                  marketingEmails: value,
+                }))
+              }
             />
           </SettingSection>
 
           <SettingSection title="Data & Privacy">
-           
             <ActionButton
               icon={Trash2}
               title="Delete Account"
@@ -518,22 +565,35 @@ const PrivacySecurityScreen = () => {
         {/* Security Tips */}
         <View className="px-6 mb-8">
           <View className="bg-blue-50 rounded-2xl p-5 border border-blue-200">
-            <Text className="text-blue-800 font-medium text-sm mb-2">Security Tips</Text>
+            <Text className="text-blue-800 font-medium text-sm mb-2">
+              Security Tips
+            </Text>
             <View className="space-y-2">
-              <Text className="text-blue-600 text-xs">• Use a strong, unique password</Text>
-              <Text className="text-blue-600 text-xs">• Enable two-factor authentication</Text>
-              <Text className="text-blue-600 text-xs">• Review your privacy settings regularly</Text>
-              <Text className="text-blue-600 text-xs">• Log out from shared devices</Text>
-              <Text className="text-blue-600 text-xs">• Update your password every 3 months</Text>
+              <Text className="text-blue-600 text-xs">
+                • Use a strong, unique password
+              </Text>
+              <Text className="text-blue-600 text-xs">
+                • Enable two-factor authentication
+              </Text>
+              <Text className="text-blue-600 text-xs">
+                • Review your privacy settings regularly
+              </Text>
+              <Text className="text-blue-600 text-xs">
+                • Log out from shared devices
+              </Text>
+              <Text className="text-blue-600 text-xs">
+                • Update your password every 3 months
+              </Text>
             </View>
           </View>
         </View>
 
         {/* Last Updated */}
         <View className="items-center pb-10">
-          <Text className="text-gray-400 text-sm font-medium">Last updated: Today at 14:30</Text>
+          <Text className="text-gray-400 text-sm font-medium">
+            Last updated: Today at 14:30
+          </Text>
         </View>
-
       </ScrollView>
     </SafeAreaView>
   );

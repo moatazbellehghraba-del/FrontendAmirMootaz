@@ -50,6 +50,7 @@ interface CurrentClientResponse {
     favorites: string[];
     bookings?: any[];
     reviews?: any[];
+    createdAt?: string;
   };
 }
 
