@@ -8,6 +8,8 @@ import {
   Image,
   Dimensions,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -19,17 +21,20 @@ import { LOGIN } from "../../graphql/auth/mutations/auth";
 import { client } from "@/apollo/client";
 import { GET_CURRENT_CLIENT } from "../../graphql/auth/queries/auth";
 import { AuthContext } from "@/context/AuthContext";
+
 // Interface for login data
 interface LoginData {
   email: string;
   password: string;
 }
+
 interface LoginResponse {
   login: {
     accessToken: string;
     refreshToken: string;
   };
 }
+
 interface CurrentClientResponse {
   me: {
     _id: string;
@@ -140,9 +145,22 @@ const Login = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <ScrollView className="flex-1" contentContainerStyle={{ flexGrow: 1 }}>
-        <View className="flex-1 px-4 justify-center">
+    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={0}
+      >
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{ 
+            flexGrow: 1,
+            paddingHorizontal: 16,
+            justifyContent: 'center'
+          }}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
           {/* Logo - Same size as loading screen */}
           <View className="items-center mb-2">
             <Image
@@ -179,6 +197,7 @@ const Login = () => {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoComplete="email"
+                returnKeyType="next"
               />
             </View>
 
@@ -194,6 +213,8 @@ const Login = () => {
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
                 autoComplete="password"
+                returnKeyType="done"
+                onSubmitEditing={handleLogin}
               />
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
                 {showPassword ? (
@@ -244,25 +265,17 @@ const Login = () => {
             >
               <Icon name="google" size={18} color="#DB4437" />
             </TouchableOpacity>
-
-            {/* Facebook Login */}
-            <TouchableOpacity
-              className="w-10 h-10 border border-gray-300 rounded-xl items-center justify-center"
-              onPress={() => handleSocialLogin("Facebook")}
-            >
-              <Icon name="facebook" size={18} color="#1877F2" />
-            </TouchableOpacity>
           </View>
 
           {/* Sign Up Link */}
-          <View className="flex-row justify-center">
+          <View className="flex-row justify-center mb-6">
             <Text className="text-gray-600">Don't have an account? </Text>
             <TouchableOpacity onPress={handleSignUp}>
               <Text className="text-black font-semibold">Sign Up</Text>
             </TouchableOpacity>
           </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };

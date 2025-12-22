@@ -1,7 +1,7 @@
 // app/(tabs)/_layout.tsx
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { StyleSheet, Text, View, Platform } from "react-native";
+import { StyleSheet, View, Platform } from "react-native";
 import React from "react";
 
 export default function TabsLayout() {
@@ -9,29 +9,35 @@ export default function TabsLayout() {
     <Tabs
       // @ts-ignore: sceneContainerStyle is not present in the expo-router Tabs types but is supported at runtime
       sceneContainerStyle={{
-        backgroundColor: "#101010",
+        backgroundColor: "#FFFFFF",
       }}
       screenOptions={{
         tabBarShowLabel: false,
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: "#101010",
-          borderTopColor: "#1C1C1E",
+          backgroundColor: "#FFFFFF",
+          borderTopColor: "#E5E5E5",
           borderTopWidth: 1,
-          height: Platform.OS === "ios" ? 85 : 90,
-          paddingBottom: Platform.OS === "ios" ? 25 : 20,
-          paddingTop: 12,
+          height: Platform.OS === "ios" ? 88 : 65,
+          paddingBottom: Platform.OS === "ios" ? 34 : 12,
+          paddingTop: Platform.OS === "ios" ? 10 : 8,
+          paddingHorizontal: 20,
           position: "absolute",
           elevation: 0,
-          shadowOpacity: 0,
-          borderBottomWidth: 0,
+          shadowColor: "#000000",
+          shadowOffset: {
+            width: 0,
+            height: -2,
+          },
+          shadowOpacity: 0.05,
+          shadowRadius: 8,
         },
         headerBackground: () => null,
         headerTitle: "",
         headerShadowVisible: false,
-        headerTintColor: "#101010",
+        headerTintColor: "#FFFFFF",
         headerStyle: {
-          backgroundColor: "#101010",
+          backgroundColor: "#FFFFFF",
           elevation: 0,
           shadowOpacity: 0,
           borderBottomWidth: 0,
@@ -114,15 +120,20 @@ function TabIcon({
 }) {
   return (
     <View style={styles.tabItem}>
-      <View style={styles.iconContainer}>
+      <View
+        style={[
+          styles.iconContainer,
+          focused && styles.iconContainerFocused,
+        ]}
+      >
         <Ionicons
           name={name as any}
-          size={focused ? 26 : 24}
-          color={focused ? "#eff599ff" : "#989898"}
+          size={24}
+          color={focused ? "#000000" : "#9CA3AF"}
         />
-        <Text style={[styles.tabText, { opacity: focused ? 1 : 0 }]}>
-          {label}
-        </Text>
+        {focused && (
+          <View style={styles.activeIndicator} />
+        )}
       </View>
     </View>
   );
@@ -132,19 +143,25 @@ const styles = StyleSheet.create({
   tabItem: {
     alignItems: "center",
     justifyContent: "center",
-    height: Platform.OS === "ios" ? 50 : 40,
-    paddingVertical: 8,
-    minWidth: 70,
+    flex: 1,
   },
   iconContainer: {
     alignItems: "center",
     justifyContent: "center",
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    position: "relative",
   },
-  tabText: {
-    color: "#FFFFFF",
-    fontSize: 10,
-    fontWeight: "500",
-    marginTop: 4,
-    textAlign: "center",
+  iconContainerFocused: {
+    backgroundColor: "#F3F4F6",
+  },
+  activeIndicator: {
+    position: "absolute",
+    bottom: -6,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#000000",
   },
 });
