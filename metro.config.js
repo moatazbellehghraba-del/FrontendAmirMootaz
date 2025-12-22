@@ -1,6 +1,9 @@
-const { getDefaultConfig } = require("expo/metro-config");
-const { withNativeWind } = require("nativewind/metro");
+const { getDefaultConfig } = require('@expo/metro-config');
+const { withNativeWind } = require('nativewind/metro');
 
 const config = getDefaultConfig(__dirname);
 
-module.exports = withNativeWind(config, { input: "./app/global.css" });
+// Prefer CommonJS `main` field (tslib's CommonJS build) before ESM `module`.
+config.resolver.resolverMainFields = ['react-native', 'main', 'module'];
+
+module.exports = withNativeWind(config, { input: './app/global.css' });

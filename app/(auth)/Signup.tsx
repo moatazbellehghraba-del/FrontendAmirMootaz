@@ -12,7 +12,7 @@ import {
   Phone,
   User,
 } from "lucide-react-native";
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useRef } from "react";
 import {
   Alert,
   Dimensions,
@@ -22,6 +22,9 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  KeyboardAvoidingView,
+  Platform,
+  Keyboard,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/FontAwesome5";
@@ -31,18 +34,13 @@ import { REGISTER } from "../../graphql/auth/mutations/auth";
 import { client } from "@/apollo/client";
 import { GET_CURRENT_CLIENT } from "../../graphql/auth/queries/auth";
 import { AuthContext } from "@/context/AuthContext";
-// Interface for signup data
-// interface RegisterResponse {
-//   register: {
-//     accessToken: string;
-//     refreshToken: string;
-//   };
-//}
+
 interface RegisterResponse {
   register: {
     message: string;
   };
 }
+
 interface CurrentClientResponse {
   me: {
     _id: string;
@@ -66,6 +64,7 @@ interface CurrentClientResponse {
     createdAt?: string;
   };
 }
+
 interface SignupData {
   firstName: string;
   lastName: string;
@@ -105,6 +104,13 @@ const Signup = () => {
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showGenderDropdown, setShowGenderDropdown] = useState(false);
+
+  const scrollViewRef = useRef<ScrollView>(null);
+  const lastNameRef = useRef<TextInput>(null);
+  const emailRef = useRef<TextInput>(null);
+  const phoneRef = useRef<TextInput>(null);
+  const passwordRef = useRef<TextInput>(null);
+  const confirmPasswordRef = useRef<TextInput>(null);
 
   // Calculate logo size to match login screen
   const logoSize = width * 0.5;
@@ -251,29 +257,6 @@ const Signup = () => {
       console.log("Sending to backend:", signupPayload);
       const res = await register({ variables: { input: signupPayload } });
       console.log("this the value of res ", res);
-      // Ensure tokens exist
-      // const tokens = res.data?.register;
-      // if (!tokens) {
-      //   Alert.alert("Error", "No tokens returned from server");
-      //   return;
-      // }
-
-      // // Save tokens securely
-      // await SecureStore.setItemAsync("accessToken", tokens.accessToken);
-      // await SecureStore.setItemAsync("refreshToken", tokens.refreshToken);
-      // const { data } = await client.query<CurrentClientResponse>({
-      //   query: GET_CURRENT_CLIENT,
-      //   fetchPolicy: "network-only",
-      // });
-      // console.log("value of data", data);
-      // if (data?.me) {
-      //   await SecureStore.setItemAsync("currentUser", JSON.stringify(data.me));
-      // }
-      // Alert.alert("Success", "Account created successfully!");
-      // if (!data || !data.me) {
-      //   Alert.alert("Error", "Failed to load user profile");
-      //   return;
-      // }
 
       router.push({
         pathname: "/(auth)/Verification",
@@ -323,14 +306,31 @@ const Signup = () => {
     }));
   };
 
+  // Focus next input field
+  const focusNextField = (nextRef: React.RefObject<TextInput | null>) => {
+    nextRef.current?.focus();
+  };
+
+  // Scroll to input when focused - REMOVED as we don't need manual scrolling
+
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <ScrollView
-        className="flex-1"
-        contentContainerStyle={{ flexGrow: 1 }}
-        showsVerticalScrollIndicator={false}
+    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={0}
       >
-        <View className="flex-1 px-4 py-4">
+        <ScrollView
+          ref={scrollViewRef}
+          className="flex-1"
+          contentContainerStyle={{ 
+            paddingHorizontal: 16,
+            paddingTop: 16,
+            paddingBottom: 40 
+          }}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
           {/* Logo */}
           <View className="items-center mb-6">
             <Image
@@ -370,6 +370,9 @@ const Signup = () => {
                       handleInputChange("firstName", value)
                     }
                     autoCapitalize="words"
+                    returnKeyType="next"
+                    onSubmitEditing={() => focusNextField(lastNameRef)}
+                    blurOnSubmit={false}
                   />
                 </View>
               </View>
@@ -379,6 +382,7 @@ const Signup = () => {
                 <View className="flex-row items-center border border-gray-300 rounded-2xl px-4 py-4">
                   <User size={20} color="#6B7280" />
                   <TextInput
+                    ref={lastNameRef}
                     className="flex-1 ml-3 text-black text-base"
                     placeholder="Last Name"
                     placeholderTextColor="#9CA3AF"
@@ -387,6 +391,9 @@ const Signup = () => {
                       handleInputChange("lastName", value)
                     }
                     autoCapitalize="words"
+                    returnKeyType="next"
+                    onSubmitEditing={() => focusNextField(emailRef)}
+                    blurOnSubmit={false}
                   />
                 </View>
               </View>
@@ -396,6 +403,7 @@ const Signup = () => {
             <View className="flex-row items-center border border-gray-300 rounded-2xl px-4 py-4 mb-4">
               <Mail size={20} color="#6B7280" />
               <TextInput
+                ref={emailRef}
                 className="flex-1 ml-3 text-black text-base"
                 placeholder="Enter your email"
                 placeholderTextColor="#9CA3AF"
@@ -404,6 +412,9 @@ const Signup = () => {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoComplete="email"
+                returnKeyType="next"
+                onSubmitEditing={() => focusNextField(phoneRef)}
+                blurOnSubmit={false}
               />
             </View>
 
@@ -411,6 +422,7 @@ const Signup = () => {
             <View className="flex-row items-center border border-gray-300 rounded-2xl px-4 py-4 mb-4">
               <Phone size={20} color="#6B7280" />
               <TextInput
+                ref={phoneRef}
                 className="flex-1 ml-3 text-black text-base"
                 placeholder="Enter your phone number"
                 placeholderTextColor="#9CA3AF"
@@ -418,6 +430,9 @@ const Signup = () => {
                 onChangeText={(value) => handleInputChange("phone", value)}
                 keyboardType="phone-pad"
                 autoComplete="tel"
+                returnKeyType="next"
+                onSubmitEditing={() => focusNextField(passwordRef)}
+                blurOnSubmit={false}
               />
             </View>
 
@@ -428,6 +443,7 @@ const Signup = () => {
                 <View className="flex-row items-center border border-gray-300 rounded-2xl px-4 py-4">
                   <Lock size={20} color="#6B7280" />
                   <TextInput
+                    ref={passwordRef}
                     className="flex-1 ml-3 text-black text-base"
                     placeholder="Password"
                     placeholderTextColor="#9CA3AF"
@@ -438,6 +454,9 @@ const Signup = () => {
                     secureTextEntry={!showPassword}
                     autoCapitalize="none"
                     autoComplete="password-new"
+                    returnKeyType="next"
+                    onSubmitEditing={() => focusNextField(confirmPasswordRef)}
+                    blurOnSubmit={false}
                   />
                   <TouchableOpacity
                     onPress={() => setShowPassword(!showPassword)}
@@ -456,6 +475,7 @@ const Signup = () => {
                 <View className="flex-row items-center border border-gray-300 rounded-2xl px-4 py-4">
                   <Lock size={20} color="#6B7280" />
                   <TextInput
+                    ref={confirmPasswordRef}
                     className="flex-1 ml-3 text-black text-base"
                     placeholder="Confirm"
                     placeholderTextColor="#9CA3AF"
@@ -466,6 +486,8 @@ const Signup = () => {
                     secureTextEntry={!showConfirmPassword}
                     autoCapitalize="none"
                     autoComplete="password-new"
+                    returnKeyType="next"
+                    onSubmitEditing={() => Keyboard.dismiss()}
                   />
                   <TouchableOpacity
                     onPress={() => setShowConfirmPassword(!showConfirmPassword)}
@@ -489,7 +511,7 @@ const Signup = () => {
                   onPress={() => setShowGenderDropdown(!showGenderDropdown)}
                 >
                   <User size={20} color="#6B7280" />
-                  <Text className="flex-1 ml-3 text-black text-base">
+                  <Text className={`flex-1 ml-3 text-base ${signupData.gender ? 'text-black' : 'text-gray-400'}`}>
                     {signupData.gender || "Gender"}
                   </Text>
                   <ChevronDown size={20} color="#6B7280" />
@@ -570,6 +592,7 @@ const Signup = () => {
                       onChangeText={(value) =>
                         handleInputChange("region", value)
                       }
+                      returnKeyType="next"
                     />
                   </View>
                 </View>
@@ -587,6 +610,8 @@ const Signup = () => {
                       onChangeText={(value) =>
                         handleInputChange("country", value)
                       }
+                      returnKeyType="done"
+                      onSubmitEditing={() => Keyboard.dismiss()}
                     />
                   </View>
                 </View>
@@ -658,14 +683,6 @@ const Signup = () => {
             >
               <Icon name="google" size={18} color="#DB4437" />
             </TouchableOpacity>
-
-            {/* Facebook Signup */}
-            <TouchableOpacity
-              className="w-10 h-10 border border-gray-300 rounded-xl items-center justify-center"
-              onPress={() => handleSocialSignup("Facebook")}
-            >
-              <Icon name="facebook" size={18} color="#1877F2" />
-            </TouchableOpacity>
           </View>
 
           {/* Login Link */}
@@ -675,8 +692,8 @@ const Signup = () => {
               <Text className="text-black font-semibold">Log In</Text>
             </TouchableOpacity>
           </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
