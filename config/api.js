@@ -1,5 +1,5 @@
 const API_URL = {
-  dev: "http://192.168.1.17:5000/graphql",
+  dev: "https://backendmooamisahaproject.onrender.com/graphql",
   prod: "https://yourdomain.com/graphql",
 };
 
