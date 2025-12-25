@@ -3,70 +3,38 @@ import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, View, Platform, StatusBar } from "react-native";
 import React from "react";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TabsLayout() {
+  const insets = useSafeAreaInsets();
+  
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-      <Tabs
-        screenOptions={{
-          tabBarShowLabel: false,
-          headerShown: false,
-          tabBarStyle: {
-            backgroundColor: "#FFFFFF",
-            borderTopColor: "#E5E5E5",
-            borderTopWidth: 1,
-            height: Platform.select({
-              ios: 88,
-              android: 80, // Reduced height for Android
-              default: 65,
-            }),
-            paddingBottom: Platform.select({
-              ios: 34,
-              android: 12, // Reduced padding bottom
-              default: 8,
-            }),
-            paddingTop: Platform.select({
-              ios: 10,
-              android: 8, // Reduced padding top
-              default: 6,
-            }),
-            paddingHorizontal: 20,
-            position: "absolute",
-            bottom: Platform.select({
-              android: 0, // No extra bottom margin needed
-              ios: 0,
-              default: 0,
-            }),
-            left: 0,
-            right: 0,
-            elevation: 8,
-            shadowColor: "#000000",
-            shadowOffset: {
-              width: 0,
-              height: -2,
-            },
-            shadowOpacity: Platform.select({
-              ios: 0.05,
-              android: 0.1,
-              default: 0.1,
-            }),
-            shadowRadius: 8,
-          },
-          tabBarItemStyle: {
-            height: "100%",
-            justifyContent: "center",
-          },
-          headerBackground: () => null,
-          headerTitle: "",
-          headerShadowVisible: false,
-          headerTintColor: "#FFFFFF",
-          headerStyle: {
-            backgroundColor: "#FFFFFF",
-            elevation: 0,
-            shadowOpacity: 0,
-            borderBottomWidth: 0,
-            height: Platform.OS === "ios" ? 0 : StatusBar.currentHeight,
+    <Tabs
+      // @ts-ignore: sceneContainerStyle is not present in the expo-router Tabs types but is supported at runtime
+      sceneContainerStyle={{
+        backgroundColor: "#FFFFFF",
+        paddingBottom: Platform.OS === "android" ? insets.bottom + 65 : 88,
+      }}
+      screenOptions={{
+        tabBarShowLabel: false,
+        headerShown: false,
+        tabBarStyle: {
+          backgroundColor: "#FFFFFF",
+          borderTopColor: "#E5E5E5",
+          borderTopWidth: 1,
+          height: Platform.OS === "ios" ? 88 : 65 + insets.bottom,
+          paddingBottom: Platform.OS === "ios" ? 34 : insets.bottom,
+          paddingTop: Platform.OS === "ios" ? 10 : 8,
+          paddingHorizontal: 20,
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          elevation: 8,
+          shadowColor: "#000000",
+          shadowOffset: {
+            width: 0,
+            height: -2,
           },
         }}
       >

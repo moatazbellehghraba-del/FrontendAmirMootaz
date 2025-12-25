@@ -1,103 +1,28 @@
-// components/salon/MapSection.tsx (No API Key Solution - Fixed)
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   Linking,
   StyleSheet,
+  Dimensions,
   Platform,
   ActivityIndicator,
-} from "react-native";
-import MapView, { UrlTile, Marker } from "react-native-maps";
-import { Ionicons } from "@expo/vector-icons";
-import { Salon } from "../../../Types/saloon";
-import { COLORS } from "../../../Constant/colors";
+} from 'react-native';
+import MapView, { UrlTile, Marker } from 'react-native-maps';
+import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
+import { Salon } from '../../../Types/saloon';
+import { COLORS } from '../../../Constant/colors';
 
 interface MapSectionProps {
   salon: Salon;
 }
 
-export default function MapSection({ salon }: MapSectionProps) {
-  const DEFAULT_ADDRESS =
-    "1ème étage Bureau 1-2, Immeuble Tartella, Avenue Yasser Arafet, Sousse 4054";
-  const displayAddress = salon.address || DEFAULT_ADDRESS;
+const { width } = Dimensions.get('window');
 
-  const lat = 35.839029;
-  const lon = 10.59715;
-  const [mapKey, setMapKey] = useState(1);
-  const [isLoading, setIsLoading] = useState(true);
-  const [hasError, setHasError] = useState(false);
-
-  // Android-specific region settings
-  const initialRegion = Platform.select({
-    ios: {
-      latitude: lat,
-      longitude: lon,
-      latitudeDelta: 0.01,
-      longitudeDelta: 0.01,
-    },
-    android: {
-      latitude: lat,
-      longitude: lon,
-      latitudeDelta: 0.005, // More zoomed in for Android
-      longitudeDelta: 0.005,
-    },
-  });
-
-  const openNavigation = () => {
-    // Use Apple Maps on iOS, Google Maps on Android
-    const url = Platform.select({
-      ios: `http://maps.apple.com/?ll=${lat},${lon}&q=${encodeURIComponent(displayAddress)}`,
-      android: `geo:${lat},${lon}?q=${lat},${lon}(${encodeURIComponent(displayAddress)})`,
-      default: `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=17/${lat}/${lon}`,
-    });
-
-    Linking.openURL(url!).catch(() => {
-      // Fallback to OpenStreetMap if native app fails
-      Linking.openURL(`https://www.openstreetmap.org/#map=17/${lat}/${lon}`);
-    });
-  };
-
-  // Force map re-render on Android (workaround for rendering issues)
-  useEffect(() => {
-    if (Platform.OS === "android") {
-      const timer = setTimeout(() => {
-        setMapKey((prev) => prev + 1);
-        setIsLoading(false);
-      }, 300);
-
-      return () => clearTimeout(timer);
-    } else {
-      setIsLoading(false);
-    }
-  }, []);
-
-  // Alternative tile providers if OSM doesn't work
-  const tileProviders = [
-    "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-    "https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
-    "https://b.tile.openstreetmap.org/{z}/{x}/{y}.png",
-    "https://c.tile.openstreetmap.org/{z}/{x}/{y}.png",
-    "https://tiles.wmflabs.org/hikebike/{z}/{x}/{y}.png",
-  ];
-
-  // Try different tile servers if one fails
-  const [currentTileProvider, setCurrentTileProvider] = useState(0);
-
-  const switchTileProvider = () => {
-    setCurrentTileProvider((prev) => (prev + 1) % tileProviders.length);
-    setMapKey((prev) => prev + 1);
-  };
-
-  if (hasError && Platform.OS === "android") {
-    return (
-      <View style={styles.errorContainer}>
-        <View style={styles.mapFallback}>
-          <Ionicons name="map-outline" size={50} color={COLORS.primary} />
-          <Text style={styles.errorTitle}>Map Unavailable</Text>
-          <Text style={styles.errorText}>
-            Could not load map tiles. Please check your internet connection.
+/* ===========================
+   Distance Helpers
           </Text>
           <TouchableOpacity
             style={styles.retryButton}
@@ -211,104 +136,39 @@ export default function MapSection({ salon }: MapSectionProps) {
             </View>
           </View>
         </View>
-      </TouchableOpacity>
-
-      {/* Address Section */}
-      <View style={styles.addressContainer}>
-        <View style={styles.addressHeader}>
-          <Ionicons name="location-outline" size={20} color={COLORS.primary} />
-          <Text style={styles.addressTitle}>Address</Text>
-        </View>
-        <Text style={styles.addressText}>{displayAddress}</Text>
-
-        <View style={styles.locationDetails}>
-          <View style={styles.locationBadge}>
-            <Ionicons name="pin" size={12} color="#666" />
-            <Text style={styles.badgeText}>Sousse</Text>
-          </View>
-          <View style={styles.locationBadge}>
-            <Ionicons name="flag" size={12} color="#666" />
-            <Text style={styles.badgeText}>Tunisia</Text>
-          </View>
-          <View style={styles.locationBadge}>
-            <Ionicons name="barcode" size={12} color="#666" />
-            <Text style={styles.badgeText}>4054</Text>
-          </View>
-        </View>
-
-        <TouchableOpacity
-          style={styles.directionsButton}
-          onPress={openNavigation}
-        >
-          <Ionicons name="navigate-outline" size={20} color="#FFFFFF" />
-          <Text style={styles.directionsButtonText}>Get Directions</Text>
-        </TouchableOpacity>
       </View>
     </View>
   );
 }
 
+/* ===========================
+   Styles
+=========================== */
+
 const styles = StyleSheet.create({
   container: {
     backgroundColor: COLORS.card,
-    borderRadius: 12,
-    overflow: "hidden",
+    borderRadius: 14,
+    overflow: 'hidden',
     marginBottom: 16,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  mapTouchable: {
-    flex: 1,
-  },
-  mapContainer: {
-    width: "100%",
-    height: 220,
-    position: "relative",
-    backgroundColor: "#E8E8E8", // Fallback background color
-  },
   map: {
-    width: "100%",
-    height: "100%",
+    width: '100%',
+    height: 220,
   },
-  loadingContainer: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "#F5F5F5",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 10,
-  },
-  loadingText: {
-    marginTop: 10,
-    color: COLORS.textSecondary,
-    fontSize: 14,
-  },
-  mapControls: {
-    position: "absolute",
-    top: 12,
+  hintContainer: {
+    position: 'absolute',
+    bottom: 12,
     right: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  controlButton: {
-    backgroundColor: "rgba(255, 255, 255, 0.9)",
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(0, 0, 0, 0.1)",
-  },
-  mapHint: {
-    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    backgroundColor: 'rgba(255,255,255,0.95)',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(0, 0, 0, 0.1)",
+    flexDirection: 'row',
+    alignItems: 'center',
+    elevation: 4,
   },
   hintText: {
     fontSize: 12,
@@ -439,5 +299,30 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#888",
     marginTop: 4,
+  },
+  addressContainer: {
+    padding: 16,
+  },
+  addressText: {
+    fontSize: 16,
+    color: COLORS.textPrimary,
+    fontWeight: '500',
+    lineHeight: 22,
+  },
+  subText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    marginTop: 4,
+  },
+  distanceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  distanceText: {
+    fontSize: 14,
+    color: COLORS.primary,
+    marginLeft: 6,
+    fontWeight: '600',
   },
 });
