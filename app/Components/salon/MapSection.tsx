@@ -23,173 +23,118 @@ const { width } = Dimensions.get('window');
 
 /* ===========================
    Distance Helpers
-=========================== */
+          </Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => {
+              setHasError(false);
+              setMapKey((prev) => prev + 1);
+            }}
+          >
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.directionsButton}
+            onPress={openNavigation}
+          >
+            <Ionicons name="navigate-outline" size={18} color="#FFFFFF" />
+            <Text style={styles.directionsButtonText}>Open in Maps App</Text>
+          </TouchableOpacity>
+        </View>
 
-// Haversine formula (meters)
-const calculateDistance = (
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number
-): number => {
-  const R = 6371000;
-  const toRad = (deg: number) => (deg * Math.PI) / 180;
-
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) *
-      Math.cos(toRad(lat2)) *
-      Math.sin(dLon / 2) ** 2;
-
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-};
-
-const formatDistance = (meters: number): string =>
-  meters < 1000
-    ? `${Math.round(meters)} m away`
-    : `≈ ${(meters / 1000).toFixed(1)} km away`;
-
-/* ===========================
-   Component
-=========================== */
-
-export default function MapSection({ salon }: MapSectionProps) {
-  const DEFAULT_ADDRESS =
-    '1ème étage Bureau 1-2, Immeuble Tartella, Avenue Yasser Arafet, Sousse 4054';
-
-  const displayAddress = salon.address || DEFAULT_ADDRESS;
-  const lat = salon.latitude || 35.839029;
-  const lon = salon.longitude || 10.59715;
-
-  const [distanceText, setDistanceText] = useState('Calculating distance...');
-  const [loadingLocation, setLoadingLocation] = useState(true);
-
-  /* ===========================
-     Get User Location
-  =========================== */
-
-  useEffect(() => {
-    (async () => {
-      const { status } =
-        await Location.requestForegroundPermissionsAsync();
-
-      if (status !== 'granted') {
-        setDistanceText('Location permission denied');
-        setLoadingLocation(false);
-        return;
-      }
-
-      try {
-        const location =
-          await Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.High,
-          });
-
-        const distance = calculateDistance(
-          location.coords.latitude,
-          location.coords.longitude,
-          lat,
-          lon
-        );
-
-        setDistanceText(formatDistance(distance));
-      } catch {
-        setDistanceText('Unable to get location');
-      } finally {
-        setLoadingLocation(false);
-      }
-    })();
-  }, [lat, lon]);
-
-  /* ===========================
-     Open Native Navigation
-  =========================== */
-
-  const openNavigation = () => {
-    const url =
-      Platform.OS === 'android'
-        ? `geo:${lat},${lon}?q=${lat},${lon}(${encodeURIComponent(
-            displayAddress
-          )})`
-        : `https://maps.apple.com/?ll=${lat},${lon}`;
-
-    Linking.openURL(url);
-  };
-
-  /* ===========================
-     Render
-  =========================== */
+        {/* Address Section (still shown) */}
+        <View style={styles.addressContainer}>
+          <Text style={styles.addressText}>{displayAddress}</Text>
+          <Text style={styles.locationText}>Sousse, Tunisia • 4054</Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity activeOpacity={0.9} onPress={openNavigation}>
-      <MapView
-  style={styles.map}
-  region={{
-    latitude: lat,
-    longitude: lon,
-    latitudeDelta: 0.003,     // 👈 closer zoom
-    longitudeDelta: 0.003,
-  }}
-  scrollEnabled={false}
-  zoomEnabled={false}
-  rotateEnabled={false}
-  pitchEnabled={false}
-  mapType="none"
->
-  <UrlTile
-    urlTemplate="https://cartodb-basemaps-a.global.ssl.fastly.net/light_all/{z}/{x}/{y}@2x.png"
-    tileSize={512}           // 👈 HD tiles
-    maximumZ={20}
-    zIndex={-1}
-  />
+      {/* Map Section */}
+      <TouchableOpacity
+        onPress={openNavigation}
+        activeOpacity={0.9}
+        style={styles.mapTouchable}
+      >
+        <View style={styles.mapContainer}>
+          {isLoading && (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={COLORS.primary} />
+              <Text style={styles.loadingText}>Loading map...</Text>
+            </View>
+          )}
 
-  <Marker
-    coordinate={{ latitude: lat, longitude: lon }}
-    pinColor={COLORS.primary}
-  />
-</MapView>
+          <MapView
+            key={`map-${mapKey}`} // Force re-render with key change
+            style={styles.map}
+            region={initialRegion}
+            initialRegion={initialRegion}
+            scrollEnabled={false}
+            zoomEnabled={false}
+            rotateEnabled={false}
+            pitchEnabled={false}
+            zoomControlEnabled={false}
+            toolbarEnabled={false}
+            showsScale={false}
+            showsCompass={false}
+            showsPointsOfInterest={false}
+            showsBuildings={true}
+            showsIndoors={false}
+            cacheEnabled={Platform.OS === "android"} // Cache enabled for Android
+            moveOnMarkerPress={false}
+            onMapReady={() => {
+              setIsLoading(false);
+              if (Platform.OS === "android") {
+                // Force a small delay for Android rendering
+                setTimeout(() => {
+                  setMapKey((prev) => prev + 1);
+                }, 100000);
+              }
+            }}
+            // REMOVED: onError prop as it doesn't exist in react-native-maps
+            // Use onLayoutError or other available error handlers instead
+          >
+            {/* OpenStreetMap Tile Layer */}
+            <UrlTile
+              urlTemplate={tileProviders[currentTileProvider]}
+              maximumZ={19}
+              minimumZ={0}
+              flipY={false}
+              shouldReplaceMapContent={true}
+              tileSize={Platform.OS === "android" ? 512 : 256}
+              zIndex={-1}
+            />
 
+            {/* Custom Marker */}
+            <Marker
+              coordinate={{ latitude: lat, longitude: lon }}
+              tracksViewChanges={false} // Better performance on Android
+            >
+              <View style={styles.customMarker}>
+                <View style={styles.markerDot}>
+                  <Ionicons name="location" size={16} color="#FFFFFF" />
+                </View>
+                <View style={styles.markerPulse} />
+              </View>
+            </Marker>
+          </MapView>
 
-        {/* Tap hint */}
-        <View style={styles.hintContainer}>
-          <Ionicons
-            name="navigate-outline"
-            size={14}
-            color={COLORS.primary}
-          />
-          <Text style={styles.hintText}>Tap for directions</Text>
-        </View>
-      </TouchableOpacity>
-
-      {/* Address + Distance */}
-      <View style={styles.addressContainer}>
-        <Text style={styles.addressText}>{displayAddress}</Text>
-        <Text style={styles.subText}>Sousse, Tunisia • 4054</Text>
-
-        <View style={styles.distanceRow}>
-          <Ionicons
-            name="location-outline"
-            size={16}
-            color={COLORS.primary}
-          />
-          <Text style={styles.distanceText}>
-            {loadingLocation ? (
-              <>
-                <ActivityIndicator
-                  size="small"
-                  color={COLORS.primary}
-                />
-                {'  '}Calculating...
-              </>
-            ) : (
-              distanceText
-            )}
-          </Text>
+          {/* Map Controls */}
+          <View style={styles.mapControls}>
+            <TouchableOpacity
+              style={styles.controlButton}
+              onPress={switchTileProvider}
+            >
+              <Ionicons name="refresh" size={16} color={COLORS.primary} />
+            </TouchableOpacity>
+            <View style={styles.mapHint}>
+              <Ionicons name="open-outline" size={14} color={COLORS.primary} />
+              <Text style={styles.hintText}>Tap for directions</Text>
+            </View>
+          </View>
         </View>
       </View>
     </View>
@@ -229,7 +174,131 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.primary,
     marginLeft: 4,
-    fontWeight: '600',
+    fontWeight: "600",
+  },
+  customMarker: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  markerDot: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.primary,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 3,
+    borderColor: "#FFFFFF",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 5,
+  },
+  markerPulse: {
+    position: "absolute",
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: COLORS.primary,
+    opacity: 0.3,
+  },
+  addressContainer: {
+    padding: 16,
+  },
+  addressHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  addressTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: COLORS.textPrimary,
+    marginLeft: 8,
+  },
+  addressText: {
+    fontSize: 15,
+    color: COLORS.textSecondary,
+    lineHeight: 22,
+    marginBottom: 12,
+  },
+  locationDetails: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 16,
+  },
+  locationBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F5F5F5",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    gap: 4,
+  },
+  badgeText: {
+    fontSize: 12,
+    color: "#666",
+  },
+  directionsButton: {
+    backgroundColor: COLORS.primary,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 14,
+    borderRadius: 10,
+    gap: 8,
+  },
+  directionsButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  errorContainer: {
+    backgroundColor: COLORS.card,
+    borderRadius: 12,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  mapFallback: {
+    height: 220,
+    backgroundColor: "#F5F5F5",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  errorTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: COLORS.textPrimary,
+    marginTop: 12,
+    marginBottom: 6,
+  },
+  errorText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    textAlign: "center",
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  retryButton: {
+    backgroundColor: COLORS.primary + "20", // 20% opacity
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  retryButtonText: {
+    color: COLORS.primary,
+    fontWeight: "600",
+  },
+  locationText: {
+    fontSize: 14,
+    color: "#888",
+    marginTop: 4,
   },
   addressContainer: {
     padding: 16,
