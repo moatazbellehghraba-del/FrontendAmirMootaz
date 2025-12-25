@@ -3,13 +3,17 @@ import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, View, Platform } from "react-native";
 import React from "react";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TabsLayout() {
+  const insets = useSafeAreaInsets();
+  
   return (
     <Tabs
       // @ts-ignore: sceneContainerStyle is not present in the expo-router Tabs types but is supported at runtime
       sceneContainerStyle={{
         backgroundColor: "#FFFFFF",
+        paddingBottom: Platform.OS === "android" ? insets.bottom + 65 : 88,
       }}
       screenOptions={{
         tabBarShowLabel: false,
@@ -18,12 +22,15 @@ export default function TabsLayout() {
           backgroundColor: "#FFFFFF",
           borderTopColor: "#E5E5E5",
           borderTopWidth: 1,
-          height: Platform.OS === "ios" ? 88 : 65,
-          paddingBottom: Platform.OS === "ios" ? 34 : 12,
+          height: Platform.OS === "ios" ? 88 : 65 + insets.bottom,
+          paddingBottom: Platform.OS === "ios" ? 34 : insets.bottom,
           paddingTop: Platform.OS === "ios" ? 10 : 8,
           paddingHorizontal: 20,
           position: "absolute",
-          elevation: 0,
+          bottom: 0,
+          left: 0,
+          right: 0,
+          elevation: 8,
           shadowColor: "#000000",
           shadowOffset: {
             width: 0,

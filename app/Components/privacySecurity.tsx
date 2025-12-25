@@ -3,10 +3,12 @@ import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
+  Pressable,
   Switch,
   Alert,
   TextInput,
+  Modal,
+  TouchableOpacity,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -21,6 +23,8 @@ import {
   Smartphone,
   ChevronDown,
   ChevronUp,
+  X,
+  Star,
 } from "lucide-react-native";
 import { useMutation } from "@apollo/client/react";
 import {
@@ -40,6 +44,16 @@ interface CurrentUpadatePassword {
   firstName: string;
   email: string;
 }
+
+const DELETION_REASONS = [
+  { id: "1", label: "I found a better alternative" },
+  { id: "2", label: "I'm not using the app anymore" },
+  { id: "3", label: "Privacy concerns" },
+  { id: "4", label: "Too many notifications" },
+  { id: "5", label: "The app is too complicated" },
+  { id: "6", label: "Technical issues" },
+  { id: "7", label: "Other" },
+];
 
 const PrivacySecurityScreen = () => {
   const router = useRouter();
@@ -75,20 +89,65 @@ const PrivacySecurityScreen = () => {
     confirmEmail: "",
   });
 
+  // Delete account modal states
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteStep, setDeleteStep] = useState<"reason" | "rating" | "confirm" | "password">("reason");
+  const [selectedReason, setSelectedReason] = useState<string>("");
+  const [otherReason, setOtherReason] = useState("");
+  const [appRating, setAppRating] = useState(0);
+  const [additionalFeedback, setAdditionalFeedback] = useState("");
+  const [deletePassword, setDeletePassword] = useState("");
+  const [showDeletePassword, setShowDeletePassword] = useState(false);
+
   const handleSave = () => {
     Alert.alert("Success", "Your privacy settings have been updated!");
   };
 
   const handleDeleteAccount = () => {
+    setShowDeleteModal(true);
+    setDeleteStep("reason");
+    setSelectedReason("");
+    setOtherReason("");
+    setAppRating(0);
+    setAdditionalFeedback("");
+    setDeletePassword("");
+  };
+
+  const handleNextStep = () => {
+    if (deleteStep === "reason") {
+      if (!selectedReason) {
+        Alert.alert("Error", "Please select a reason for deleting your account.");
+        return;
+      }
+      if (selectedReason === "7" && !otherReason.trim()) {
+        Alert.alert("Error", "Please provide a reason.");
+        return;
+      }
+      setDeleteStep("rating");
+    } else if (deleteStep === "rating") {
+      setDeleteStep("confirm");
+    }
+  };
+
+  const handleConfirmDeletion = () => {
+    // Here you would call your API to delete the account
+    console.log({
+      reason: selectedReason === "7" ? otherReason : DELETION_REASONS.find(r => r.id === selectedReason)?.label,
+      rating: appRating,
+      feedback: additionalFeedback,
+    });
+    
+    setShowDeleteModal(false);
     Alert.alert(
-      "Delete Account",
-      "Are you sure you want to delete your account? This action cannot be undone.",
+      "Account Suspension Scheduled",
+      "Your account will be suspended for 15 days. If you don't log in within this period, it will be permanently deleted. You can cancel this anytime by logging in.",
       [
-        { text: "Cancel", style: "cancel" },
         {
-          text: "Delete",
-          style: "destructive",
-          onPress: () => console.log("Account deletion initiated"),
+          text: "OK",
+          onPress: () => {
+            // Navigate to login or logout
+            console.log("Account deletion initiated");
+          },
         },
       ]
     );
@@ -170,10 +229,12 @@ const PrivacySecurityScreen = () => {
     showExpand?: boolean;
     isExpanded?: boolean;
   }) => (
-    <TouchableOpacity
+    <Pressable
       className="flex-row items-center justify-between py-4 active:bg-gray-50 px-4"
       onPress={onPress}
-      activeOpacity={0.7}
+      style={({ pressed }) => ({
+        opacity: pressed ? 0.7 : 1,
+      })}
       disabled={isSwitch}
     >
       <View className="flex-row items-center flex-1">
@@ -202,7 +263,7 @@ const PrivacySecurityScreen = () => {
       ) : (
         <ChevronLeft size={20} color="#9CA3AF" className="rotate-180" />
       )}
-    </TouchableOpacity>
+    </Pressable>
   );
 
   return (
@@ -225,7 +286,7 @@ const PrivacySecurityScreen = () => {
             <View>
               <Text className="text-3xl font-bold text-black">Privacy & Security</Text>
             </View>
-            <View className="w-10" /> {/* Spacer for alignment */}
+            <View className="w-10" />
           </View>
         </View>
 
@@ -466,19 +527,19 @@ const PrivacySecurityScreen = () => {
             </Text>
             <View className="space-y-1">
               <Text className="text-blue-600 text-xs">
-                • Use a strong, unique password
+                {"\u2022"} Use a strong, unique password
               </Text>
               <Text className="text-blue-600 text-xs">
-                • Enable two-factor authentication
+                {"\u2022"} Enable two-factor authentication
               </Text>
               <Text className="text-blue-600 text-xs">
-                • Review your privacy settings regularly
+                {"\u2022"} Review your privacy settings regularly
               </Text>
               <Text className="text-blue-600 text-xs">
-                • Log out from shared devices
+                {"\u2022"} Log out from shared devices
               </Text>
               <Text className="text-blue-600 text-xs">
-                • Update your password every 3 months
+                {"\u2022"} Update your password every 3 months
               </Text>
             </View>
           </View>
@@ -489,6 +550,226 @@ const PrivacySecurityScreen = () => {
           <Text className="text-gray-400 text-xs">Last updated: Today at 14:30</Text>
         </View>
       </ScrollView>
+
+      {/* Delete Account Modal - FIXED VERSION */}
+      <Modal
+        visible={showDeleteModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowDeleteModal(false)}
+      >
+        <View className="flex-1 bg-black/50 justify-end">
+          <View className="bg-white rounded-t-3xl" style={{ height: '85%' }}>
+            {/* Header */}
+            <View className="flex-row items-center justify-between px-6 pt-6 pb-4 border-b border-gray-200">
+              <Text className="text-xl font-bold text-black">
+                {deleteStep === "reason" && "Why are you leaving?"}
+                {deleteStep === "rating" && "Rate Your Experience"}
+                {deleteStep === "confirm" && "Confirm Deletion"}
+              </Text>
+              <TouchableOpacity onPress={() => setShowDeleteModal(false)}>
+                <X size={24} color="#000" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Scrollable Content */}
+            <ScrollView 
+              className="flex-1 px-6 py-4"
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 20 }}
+            >
+              {/* Step 1: Reason Selection */}
+              {deleteStep === "reason" && (
+                <View>
+                  <Text className="text-gray-600 text-sm mb-4">
+                    We're sorry to see you go. Please let us know why you're deleting your account:
+                  </Text>
+                  
+                  {DELETION_REASONS.map((reason) => (
+                    <Pressable
+                      key={reason.id}
+                      onPress={() => setSelectedReason(reason.id)}
+                      className={`border rounded-xl p-4 mb-3 ${
+                        selectedReason === reason.id
+                          ? "border-black bg-gray-50"
+                          : "border-gray-300 bg-white"
+                      }`}
+                      style={({ pressed }) => ({
+                        opacity: pressed ? 0.7 : 1,
+                      })}
+                    >
+                      <View className="flex-row items-center justify-between">
+                        <Text className={`text-base ${
+                          selectedReason === reason.id
+                            ? "font-semibold text-black"
+                            : "text-gray-700"
+                        }`}>
+                          {reason.label}
+                        </Text>
+                        <View className={`w-5 h-5 rounded-full border-2 ${
+                          selectedReason === reason.id
+                            ? "border-black bg-black"
+                            : "border-gray-300"
+                        } items-center justify-center`}>
+                          {selectedReason === reason.id && (
+                            <View className="w-2 h-2 rounded-full bg-white" />
+                          )}
+                        </View>
+                      </View>
+                    </Pressable>
+                  ))}
+
+                  {selectedReason === "7" && (
+                    <View className="mt-2">
+                      <TextInput
+                        className="bg-white border border-gray-300 rounded-xl px-4 py-4 text-base text-black"
+                        value={otherReason}
+                        onChangeText={setOtherReason}
+                        placeholder="Please tell us more..."
+                        placeholderTextColor="#9CA3AF"
+                        multiline
+                        numberOfLines={4}
+                        textAlignVertical="top"
+                      />
+                    </View>
+                  )}
+                </View>
+              )}
+
+              {/* Step 2: Rating */}
+              {deleteStep === "rating" && (
+                <View>
+                  <Text className="text-gray-600 text-sm mb-6">
+                    Before you go, would you mind rating your experience with our app?
+                  </Text>
+                  
+                  <View className="items-center mb-6">
+                    <View className="flex-row gap-3">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Pressable
+                          key={star}
+                          onPress={() => setAppRating(star)}
+                          style={({ pressed }) => ({
+                            opacity: pressed ? 0.7 : 1,
+                          })}
+                        >
+                          <Star
+                            size={40}
+                            color={star <= appRating ? "#FCD34D" : "#D1D5DB"}
+                            fill={star <= appRating ? "#FCD34D" : "none"}
+                          />
+                        </Pressable>
+                      ))}
+                    </View>
+                    {appRating > 0 && (
+                      <Text className="text-gray-600 text-sm mt-3">
+                        {appRating === 1 && "Poor"}
+                        {appRating === 2 && "Fair"}
+                        {appRating === 3 && "Good"}
+                        {appRating === 4 && "Very Good"}
+                        {appRating === 5 && "Excellent"}
+                      </Text>
+                    )}
+                  </View>
+
+                  <Text className="text-gray-600 text-sm font-medium mb-2">
+                    Additional Feedback (Optional)
+                  </Text>
+                  <TextInput
+                    className="bg-white border border-gray-300 rounded-xl px-4 py-4 text-base text-black mb-4"
+                    value={additionalFeedback}
+                    onChangeText={setAdditionalFeedback}
+                    placeholder="Tell us what we could improve..."
+                    placeholderTextColor="#9CA3AF"
+                    multiline
+                    numberOfLines={4}
+                    textAlignVertical="top"
+                  />
+                </View>
+              )}
+
+              {/* Step 3: Confirmation */}
+              {deleteStep === "confirm" && (
+                <View>
+                  <View className="bg-orange-50 border border-orange-200 rounded-xl p-4 mb-6">
+                    <Text className="text-orange-800 font-semibold text-base mb-2">
+                      ⚠️ Important Information
+                    </Text>
+                    <Text className="text-orange-700 text-sm leading-6">
+                      Your account will be suspended for 15 days. During this period:{"\n\n"}
+                      {"\u2022"} You can cancel deletion by logging back in{"\n"}
+                      {"\u2022"} Your data will be preserved{"\n"}
+                      {"\u2022"} After 15 days, your account will be permanently deleted{"\n"}
+                      {"\u2022"} Once deleted, this action cannot be undone
+                    </Text>
+                  </View>
+
+                  <View className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-4">
+                    <Text className="text-gray-700 font-semibold text-sm mb-2">
+                      What will be deleted:
+                    </Text>
+                    <Text className="text-gray-600 text-sm leading-6">
+                      {"\u2022"} Your profile and personal information{"\n"}
+                      {"\u2022"} All your bookings and history{"\n"}
+                      {"\u2022"} Saved preferences and settings{"\n"}
+                      {"\u2022"} Messages and conversations
+                    </Text>
+                  </View>
+
+                  <Text className="text-gray-600 text-sm text-center">
+                    Are you sure you want to proceed with account deletion?
+                  </Text>
+                </View>
+              )}
+            </ScrollView>
+
+            {/* Footer Buttons - Fixed at bottom */}
+            <View className="px-6 py-4 border-t border-gray-200 bg-white">
+              <View className="flex-row gap-3">
+                <Pressable
+                  onPress={() => {
+                    if (deleteStep === "reason") {
+                      setShowDeleteModal(false);
+                    } else if (deleteStep === "rating") {
+                      setDeleteStep("reason");
+                    } else {
+                      setDeleteStep("rating");
+                    }
+                  }}
+                  className="flex-1 bg-gray-100 rounded-xl py-4 items-center"
+                  style={({ pressed }) => ({
+                    opacity: pressed ? 0.7 : 1,
+                  })}
+                >
+                  <Text className="text-black font-semibold text-base">
+                    {deleteStep === "reason" ? "Cancel" : "Back"}
+                  </Text>
+                </Pressable>
+                
+                <Pressable
+                  onPress={() => {
+                    if (deleteStep === "confirm") {
+                      handleConfirmDeletion();
+                    } else {
+                      handleNextStep();
+                    }
+                  }}
+                  className={`flex-1 rounded-xl py-4 items-center ${
+                    deleteStep === "confirm" ? "bg-red-600" : "bg-black"
+                  }`}
+                  style={({ pressed }) => ({
+                    opacity: pressed ? 0.7 : 1,
+                  })}
+                >
+                  <Text className="text-white font-semibold text-base">
+                    {deleteStep === "confirm" ? "Delete Account" : "Continue"}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
