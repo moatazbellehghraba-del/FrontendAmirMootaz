@@ -33,6 +33,7 @@ import { UpdateClientData } from "@/graphql/auth/mutations/auth";
 import { client } from "@/apollo/client";
 import { GET_CURRENT_CLIENT } from "@/graphql/auth/queries/auth";
 import * as SecureStore from "expo-secure-store";
+import { Image } from "react-native";
 
 interface LocationData {
   lat?: number;
@@ -75,6 +76,7 @@ interface UserData {
   createdAt: string;
   loyaltyPoints: number;
   location?: LocationData;
+  profilePhoto?: string;
 }
 
 const PersonalInformationScreen = () => {
@@ -93,6 +95,7 @@ const PersonalInformationScreen = () => {
     createdAt: currentUser?.createdAt || "",
     loyaltyPoints: currentUser?.loyaltyPoints || 0,
     location: currentUser?.location || undefined,
+    profilePhoto: currentUser?.profilePhoto || "",
   };
 
   const [userData, setUserData] = useState<UserData>(initialUserData);
@@ -120,6 +123,7 @@ const PersonalInformationScreen = () => {
         createdAt: currentUser.createdAt || "",
         loyaltyPoints: currentUser.loyaltyPoints || 0,
         location: currentUser.location || undefined,
+        profilePhoto: currentUser.profilePhoto || "",
       };
       setUserData(updatedData);
       setOriginalData(updatedData);
@@ -134,7 +138,8 @@ const PersonalInformationScreen = () => {
   }, [currentUser]);
 
   useEffect(() => {
-    const hasChanged = JSON.stringify(userData) !== JSON.stringify(originalData);
+    const hasChanged =
+      JSON.stringify(userData) !== JSON.stringify(originalData);
     setHasChanges(hasChanged);
   }, [userData, originalData]);
 
@@ -339,14 +344,14 @@ const PersonalInformationScreen = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
         keyboardVerticalOffset={0}
       >
-        <ScrollView 
-          className="flex-1" 
+        <ScrollView
+          className="flex-1"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 120 }}
           keyboardShouldPersistTaps="handled"
@@ -368,7 +373,11 @@ const PersonalInformationScreen = () => {
               </View>
               <TouchableOpacity
                 className={`px-4 h-10 rounded-xl items-center justify-center ${
-                  isEditing ? (hasChanges ? "bg-black" : "bg-gray-200") : "bg-gray-100"
+                  isEditing
+                    ? hasChanges
+                      ? "bg-black"
+                      : "bg-gray-200"
+                    : "bg-gray-100"
                 }`}
                 onPress={isEditing ? handleSave : () => setIsEditing(true)}
                 disabled={isEditing && !hasChanges}
@@ -389,11 +398,21 @@ const PersonalInformationScreen = () => {
             {/* Profile Picture */}
             <View className="items-center py-6">
               <View className="relative mb-4">
-                <View className="w-24 h-24 bg-black rounded-full items-center justify-center">
-                  <Text className="text-white text-2xl font-bold">
-                    {getInitials()}
-                  </Text>
-                </View>
+                {userData.profilePhoto === "" ? (
+                  <View className="w-24 h-24 bg-black rounded-full items-center justify-center mb-4 shadow-lg">
+                    <Text className="text-white text-2xl font-bold">
+                      {userData.firstName[0]}
+                      {userData.lastName[0]}
+                    </Text>
+                  </View>
+                ) : (
+                  <Image
+                    source={{ uri: userData.profilePhoto }}
+                    className="w-24 h-24 rounded-full mb-4 shadow-lg"
+                    resizeMode="cover"
+                  />
+                )}
+
                 {isEditing && (
                   <TouchableOpacity
                     className="absolute bottom-0 right-0 bg-white border-2 border-black rounded-full p-2"
@@ -553,7 +572,9 @@ const PersonalInformationScreen = () => {
                     >
                       <Navigation size={16} color="#fff" />
                       <Text className="text-white font-semibold text-sm ml-2">
-                        {isGettingLocation ? "Getting..." : "Use Current Location"}
+                        {isGettingLocation
+                          ? "Getting..."
+                          : "Use Current Location"}
                       </Text>
                     </TouchableOpacity>
                   </View>
@@ -736,12 +757,16 @@ const PersonalInformationScreen = () => {
               <TouchableOpacity
                 key={gender}
                 className={`py-4 ${
-                  index < genderOptions.length - 1 ? "border-b border-gray-200" : ""
+                  index < genderOptions.length - 1
+                    ? "border-b border-gray-200"
+                    : ""
                 }`}
                 onPress={() => handleGenderSelect(gender)}
                 activeOpacity={0.7}
               >
-                <Text className="text-base text-black font-medium">{gender}</Text>
+                <Text className="text-base text-black font-medium">
+                  {gender}
+                </Text>
               </TouchableOpacity>
             ))}
           </View>
