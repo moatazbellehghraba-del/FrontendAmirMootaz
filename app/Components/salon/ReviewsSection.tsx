@@ -73,6 +73,7 @@ const initialReviews: Review[] = [
 
 // Star Rating Component
 interface StarRatingProps {
+  color?: string;
   rating: number;
   size?: number;
   editable?: boolean;
@@ -80,6 +81,7 @@ interface StarRatingProps {
 }
 
 const StarRating: React.FC<StarRatingProps> = ({ 
+  color="#FFD700",
   rating, 
   size = 20, 
   editable = false, 
@@ -103,7 +105,7 @@ const StarRating: React.FC<StarRatingProps> = ({
           <Ionicons
             name={star <= rating ? 'star' : star - 0.5 <= rating ? 'star-half' : 'star-outline'}
             size={size}
-            color={COLORS.primary}
+            color="#FFD700"
             style={{ marginHorizontal: 1 }}
           />
         </TouchableOpacity>
@@ -199,7 +201,7 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
           </View>
         </View>
         <View style={{ marginLeft: 8 }}>
-          <StarRating rating={review.rating} size={16} />
+          <StarRating rating={review.rating} size={16} color='#FFD700' />
         </View>
       </View>
       
@@ -375,7 +377,7 @@ export default function ReviewSection({ salonId }: ReviewSectionProps) {
           }}>
             {averageRating.toFixed(1)}
           </Text>
-          <StarRating rating={averageRating} size={20} />
+          <StarRating rating={averageRating} size={20} color='#FFD700' />
           <Text style={{ 
             fontSize: 14, 
             color: COLORS.textTertiary,
@@ -400,7 +402,7 @@ export default function ReviewSection({ salonId }: ReviewSectionProps) {
               }}>
                 {item.stars}
               </Text>
-              <Ionicons name="star" size={14} color={COLORS.primary} />
+              <Ionicons name="star" size={14} color="#FFD700" />
               <View style={{ 
                 flex: 1, 
                 height: 6, 
@@ -411,7 +413,7 @@ export default function ReviewSection({ salonId }: ReviewSectionProps) {
                 <View style={{ 
                   width: `${item.percentage}%`, 
                   height: '100%', 
-                  backgroundColor: COLORS.primary,
+                  backgroundColor: "#FFD700",
                   borderRadius: 3,
                 }} />
               </View>

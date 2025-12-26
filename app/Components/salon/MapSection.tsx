@@ -132,7 +132,7 @@ export default function MapSection({ salon }: MapSectionProps) {
   region={{
     latitude: lat,
     longitude: lon,
-    latitudeDelta: 0.003,     // 👈 closer zoom
+    latitudeDelta: 0.03,     // 👈 closer zoom
     longitudeDelta: 0.003,
   }}
   scrollEnabled={false}
