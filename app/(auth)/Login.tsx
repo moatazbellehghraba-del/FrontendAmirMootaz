@@ -83,55 +83,76 @@ const Login = () => {
   };
 
   // Handle login submission
-  const { login: authLogin } = useContext(AuthContext);
+ 
+const { login: authLogin } = useContext(AuthContext);
 
-  const handleLogin = async () => {
-    if (!loginData.email || !loginData.password) {
-      Alert.alert("Please fill all fields");
+const handleLogin = async () => {
+  if (!loginData.email || !loginData.password) {
+    Alert.alert("Please fill all fields");
+    return;
+  }
+
+  try {
+    const response = await login({
+      variables: {
+        email: loginData.email,
+        password: loginData.password,
+      },
+    });
+
+    const tokens = response.data?.login;
+
+    if (!tokens) {
+      Alert.alert("Login failed");
       return;
     }
 
-    try {
-      const response = await login({
-        variables: {
-          email: loginData.email,
-          password: loginData.password,
+    await SecureStore.setItemAsync("accessToken", tokens.accessToken);
+    await SecureStore.setItemAsync("refreshToken", tokens.refreshToken);
+    
+    // Fetch current client using the access token
+    const { data } = await client.query<CurrentClientResponse>({
+      query: GET_CURRENT_CLIENT,
+      fetchPolicy: "network-only",
+    });
+    
+    console.log("value of data", data);
+    
+    if (data?.me) {
+      await SecureStore.setItemAsync("currentUser", JSON.stringify(data.me));
+    }
+
+    // User is verified, proceed with login
+    if (!data || !data.me) {
+      Alert.alert("Error", "Failed to load user profile");
+      return;
+    }
+    
+    await authLogin(tokens.accessToken, tokens.refreshToken, data.me);
+    Alert.alert("Success!", "You are logged in");
+    router.replace("/(tabs)/Home");
+  } catch (error: any) {
+    console.log("Login error:", error);
+    
+    // Check if the error message contains the verification warning
+    const errorMessage = error.message?.toLowerCase() || "";
+    
+    // Use the exact error message from your backend
+    if (errorMessage.includes("please verify your email before logging in")) {
+      // Directly redirect to verification screen without showing alert
+      router.push({
+        pathname: "/(auth)/Verification",
+        params: { 
+          email: loginData.email, 
+          operation: "signup" 
         },
       });
-
-      const tokens = response.data?.login;
-
-      if (!tokens) {
-        Alert.alert("Login failed");
-        return;
-      }
-
-      await SecureStore.setItemAsync("accessToken", tokens.accessToken);
-      await SecureStore.setItemAsync("refreshToken", tokens.refreshToken);
-      // 3️⃣ Fetch current client using the access token
-      const { data } = await client.query<CurrentClientResponse>({
-        query: GET_CURRENT_CLIENT,
-        fetchPolicy: "network-only",
-      });
-      console.log("value of data", data);
-      if (data?.me) {
-        await SecureStore.setItemAsync("currentUser", JSON.stringify(data.me));
-      }
-
-      Alert.alert("Success!", "You are logged in");
-      // 2️⃣ Save everything in context
-      if (!data || !data.me) {
-        Alert.alert("Error", "Failed to load user profile");
-        return;
-      }
-      await authLogin(tokens.accessToken, tokens.refreshToken, data.me);
-      router.replace("/(tabs)/Home");
-    } catch (error: any) {
-      console.log(error);
-      Alert.alert("Error", error.message);
+    } else {
+      // For other errors, show the actual error message
+      Alert.alert("Login Failed", error.message || "An error occurred");
     }
-  };
-
+  }
+};
   // Handle social login
   const handleSocialLogin = (provider: string) => {};
 

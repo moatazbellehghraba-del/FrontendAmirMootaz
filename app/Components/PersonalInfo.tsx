@@ -10,6 +10,7 @@ import {
   Modal,
   Platform,
   KeyboardAvoidingView,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -24,10 +25,14 @@ import {
   Navigation,
   ChevronDown,
   Check,
+  Upload,
+  X,
 } from "lucide-react-native";
 import { AuthContext } from "@/context/AuthContext";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import * as Location from "expo-location";
+import * as ImagePicker from "expo-image-picker";
+import * as SecureStore from "expo-secure-store";
 import { useMutation } from "@apollo/client/react";
 import { UpdateClientData } from "@/graphql/auth/mutations/auth";
 import { client } from "@/apollo/client";
@@ -106,6 +111,9 @@ const PersonalInformationScreen = () => {
   const [showGenderPicker, setShowGenderPicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [showImagePickerModal, setShowImagePickerModal] = useState(false);
 
   const genderOptions = ["Male", "Female", "Prefer not to say"];
 
@@ -145,6 +153,7 @@ const PersonalInformationScreen = () => {
 
   const [updateClient] = useMutation<UserData>(UpdateClientData);
 
+
   const handleSave = async () => {
     try {
       const updateClientInput: any = {
@@ -166,6 +175,9 @@ const PersonalInformationScreen = () => {
           long: userData.location.long,
         };
       }
+
+      // Upload image first if new image is selected
+     
 
       await updateClient({
         variables: {
@@ -189,6 +201,7 @@ const PersonalInformationScreen = () => {
       }
 
       setOriginalData(userData);
+      setSelectedImage(null); // Reset selected image after save
       Alert.alert("Success", "Your profile has been updated successfully!");
       setIsEditing(false);
     } catch (error) {
@@ -198,7 +211,7 @@ const PersonalInformationScreen = () => {
   };
 
   const handleCancel = () => {
-    if (hasChanges) {
+    if (hasChanges || selectedImage) {
       Alert.alert(
         "Discard Changes?",
         "You have unsaved changes. Are you sure you want to discard them?",
@@ -209,6 +222,7 @@ const PersonalInformationScreen = () => {
             style: "destructive",
             onPress: () => {
               setUserData(originalData);
+              setSelectedImage(null);
               setIsEditing(false);
             },
           },
@@ -216,12 +230,13 @@ const PersonalInformationScreen = () => {
       );
     } else {
       setUserData(originalData);
+      setSelectedImage(null);
       setIsEditing(false);
     }
   };
 
   const handleBack = () => {
-    if (hasChanges && isEditing) {
+    if ((hasChanges || selectedImage) && isEditing) {
       Alert.alert(
         "Unsaved Changes",
         "You have unsaved changes. Do you want to save before leaving?",
@@ -229,7 +244,10 @@ const PersonalInformationScreen = () => {
           {
             text: "Discard",
             style: "destructive",
-            onPress: () => router.back(),
+            onPress: () => {
+              setSelectedImage(null);
+              router.back();
+            },
           },
           {
             text: "Save",
@@ -243,6 +261,7 @@ const PersonalInformationScreen = () => {
         ]
       );
     } else {
+      setSelectedImage(null);
       router.back();
     }
   };
@@ -310,6 +329,73 @@ const PersonalInformationScreen = () => {
     }
   };
 
+  const pickImage = async () => {
+    try {
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (!permissionResult.granted) {
+        Alert.alert(
+          "Permission Required",
+          "Sorry, we need camera roll permissions to make this work!"
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets[0].base64) {
+        const base64Image = `data:image/jpeg;base64,${result.assets[0].base64}`;
+        setSelectedImage(base64Image);
+        setShowImagePickerModal(false);
+      }
+    } catch (error) {
+      console.error("Error picking image:", error);
+      Alert.alert("Error", "Failed to pick image. Please try again.");
+    }
+  };
+
+  const takePhoto = async () => {
+    try {
+      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+      
+      if (!permissionResult.granted) {
+        Alert.alert(
+          "Permission Required",
+          "Sorry, we need camera permissions to make this work!"
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets[0].base64) {
+        const base64Image = `data:image/jpeg;base64,${result.assets[0].base64}`;
+        setSelectedImage(base64Image);
+        setShowImagePickerModal(false);
+      }
+    } catch (error) {
+      console.error("Error taking photo:", error);
+      Alert.alert("Error", "Failed to take photo. Please try again.");
+    }
+  };
+
+  const removeImage = () => {
+    setSelectedImage(null);
+    setUserData(prev => ({ ...prev, profilePhoto: "" }));
+    setShowImagePickerModal(false);
+  };
+
   const formatDate = (dateString: string) => {
     if (!dateString) return "";
     try {
@@ -342,6 +428,8 @@ const PersonalInformationScreen = () => {
     const last = userData?.lastName?.[0] || "";
     return `${first}${last}`.toUpperCase() || "U";
   };
+
+  const displayImage = selectedImage || userData.profilePhoto;
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
@@ -380,12 +468,16 @@ const PersonalInformationScreen = () => {
                     : "bg-gray-100"
                 }`}
                 onPress={isEditing ? handleSave : () => setIsEditing(true)}
-                disabled={isEditing && !hasChanges}
+                disabled={isEditing && !hasChanges && !selectedImage}
                 activeOpacity={0.7}
               >
                 {isEditing ? (
-                  hasChanges ? (
-                    <Check size={20} color="#fff" />
+                  (hasChanges || selectedImage) ? (
+                    isUploadingImage ? (
+                      <Text className="text-white font-semibold text-sm">Saving...</Text>
+                    ) : (
+                      <Check size={20} color="#fff" />
+                    )
                   ) : (
                     <Check size={20} color="#999" />
                   )
@@ -415,13 +507,8 @@ const PersonalInformationScreen = () => {
 
                 {isEditing && (
                   <TouchableOpacity
-                    className="absolute bottom-0 right-0 bg-white border-2 border-black rounded-full p-2"
-                    onPress={() => {
-                      Alert.alert(
-                        "Coming Soon",
-                        "Photo upload feature will be available soon!"
-                      );
-                    }}
+                    className="absolute bottom-0 right-0 bg-white border-2 border-black rounded-full p-2 shadow-lg"
+                    onPress={() => setShowImagePickerModal(true)}
                     activeOpacity={0.7}
                   >
                     <Camera size={16} color="#000" />
@@ -674,18 +761,18 @@ const PersonalInformationScreen = () => {
                 </TouchableOpacity>
                 <TouchableOpacity
                   className={`flex-1 rounded-2xl py-3.5 items-center ${
-                    hasChanges ? "bg-black" : "bg-gray-300"
+                    (hasChanges || selectedImage) ? "bg-black" : "bg-gray-300"
                   }`}
                   onPress={handleSave}
-                  disabled={!hasChanges}
+                  disabled={!hasChanges && !selectedImage}
                   activeOpacity={0.7}
                 >
                   <Text
                     className={`font-semibold text-base ${
-                      hasChanges ? "text-white" : "text-gray-500"
+                      (hasChanges || selectedImage) ? "text-white" : "text-gray-500"
                     }`}
                   >
-                    Save Changes
+                    {isUploadingImage ? "Saving..." : "Save Changes"}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -693,6 +780,85 @@ const PersonalInformationScreen = () => {
           )}
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Image Picker Modal */}
+      <Modal
+        visible={showImagePickerModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowImagePickerModal(false)}
+      >
+        <View className="flex-1 justify-end bg-black/50">
+          <View className="bg-white rounded-t-3xl p-6">
+            <View className="flex-row justify-between items-center mb-4">
+              <Text className="text-xl font-bold text-black">
+                Update Profile Photo
+              </Text>
+              <TouchableOpacity onPress={() => setShowImagePickerModal(false)}>
+                <X size={24} color="#000" />
+              </TouchableOpacity>
+            </View>
+            
+            {/* Image Preview */}
+            {displayImage && (
+              <View className="items-center mb-6">
+                <View className="w-32 h-32 rounded-full overflow-hidden border-4 border-gray-100">
+                  <Image
+                    source={{ uri: displayImage }}
+                    className="w-full h-full"
+                    resizeMode="cover"
+                  />
+                </View>
+              </View>
+            )}
+
+            {/* Options */}
+            <TouchableOpacity
+              className="flex-row items-center py-4 border-b border-gray-200"
+              onPress={takePhoto}
+              activeOpacity={0.7}
+            >
+              <View className="w-10 h-10 bg-blue-100 rounded-lg items-center justify-center mr-3">
+                <Camera size={20} color="#3B82F6" />
+              </View>
+              <View className="flex-1">
+                <Text className="text-black font-semibold text-base">Take Photo</Text>
+                <Text className="text-gray-500 text-sm">Use your camera</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              className="flex-row items-center py-4 border-b border-gray-200"
+              onPress={pickImage}
+              activeOpacity={0.7}
+            >
+              <View className="w-10 h-10 bg-purple-100 rounded-lg items-center justify-center mr-3">
+                <Upload size={20} color="#8B5CF6" />
+              </View>
+              <View className="flex-1">
+                <Text className="text-black font-semibold text-base">Choose from Library</Text>
+                <Text className="text-gray-500 text-sm">Select from gallery</Text>
+              </View>
+            </TouchableOpacity>
+
+            {displayImage && (
+              <TouchableOpacity
+                className="flex-row items-center py-4"
+                onPress={removeImage}
+                activeOpacity={0.7}
+              >
+                <View className="w-10 h-10 bg-red-100 rounded-lg items-center justify-center mr-3">
+                  <X size={20} color="#EF4444" />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-red-600 font-semibold text-base">Remove Current Photo</Text>
+                  <Text className="text-gray-500 text-sm">Use initials instead</Text>
+                </View>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      </Modal>
 
       {/* Date Picker Modal */}
       {showDatePicker &&
