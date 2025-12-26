@@ -1,11 +1,5 @@
 import React, { useContext, useState } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  Switch,
-} from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, Switch } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import {
@@ -19,6 +13,7 @@ import {
   MapPin,
 } from "lucide-react-native";
 import { AuthContext } from "@/context/AuthContext";
+import { Image } from "react-native";
 
 const ProfileScreen = () => {
   const { currentUser } = useContext(AuthContext);
@@ -29,7 +24,7 @@ const ProfileScreen = () => {
   const router = useRouter();
   const [notifications, setNotifications] = useState(true);
   const { logout } = useContext(AuthContext);
-  
+
   const handleLogout = async () => {
     await logout();
     router.replace("/(auth)/Login");
@@ -120,9 +115,9 @@ const ProfileScreen = () => {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-      <ScrollView 
-        className="flex-1" 
+    <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
+      <ScrollView
+        className="flex-1"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 120 }}
       >
@@ -136,12 +131,21 @@ const ProfileScreen = () => {
 
           {/* Profile Section */}
           <View className="items-center py-8">
-            <View className="w-24 h-24 bg-black rounded-full items-center justify-center mb-4 shadow-lg">
-              <Text className="text-white text-2xl font-bold">
-                {currentUser.firstName[0]}{currentUser.lastName[0]}
-              </Text>
-            </View>
-            
+            {currentUser.profilePhoto === null ? (
+              <View className="w-24 h-24 bg-black rounded-full items-center justify-center mb-4 shadow-lg">
+                <Text className="text-white text-2xl font-bold">
+                  {currentUser.firstName[0]}
+                  {currentUser.lastName[0]}
+                </Text>
+              </View>
+            ) : (
+              <Image
+                source={{ uri: currentUser.profilePhoto }}
+                className="w-24 h-24 rounded-full mb-4 shadow-lg"
+                resizeMode="cover"
+              />
+            )}
+
             <Text className="text-2xl font-bold text-black mb-1">
               {currentUser.firstName} {currentUser.lastName}
             </Text>
@@ -149,7 +153,7 @@ const ProfileScreen = () => {
             <Text className="text-gray-500 text-base mb-3">
               {currentUser.email}
             </Text>
-            
+
             <View className="flex-row items-center bg-gray-50 px-4 py-2 rounded-full mb-6">
               <MapPin size={14} color="#666" />
               <Text className="text-gray-600 text-sm ml-2">
